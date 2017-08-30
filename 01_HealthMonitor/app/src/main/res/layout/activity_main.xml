@@ -116,14 +116,15 @@
         <Button
             android:id="@+id/brun"
             android:layout_width="33dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="#00ff00"
             android:text="Run" />
 
         <Button
             android:id="@+id/bstop"
+            style="@style/Widget.AppCompat.Button"
             android:layout_width="37dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="#ff0000"
             android:text="Stop" />
 
