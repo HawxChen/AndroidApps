@@ -5,6 +5,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.view.View;
+import android.util.AttributeSet;
+import java.lang.Math;
 
 /**
  * GraphView creates a scaled line or bar graph with x and y axis labels.
@@ -23,8 +25,27 @@ public class GraphView extends View {
     private String title;
     private boolean type;
 
-    public GraphView(Context context, float[] values, String title, String[] horlabels, String[] verlabels, boolean type) {
-        super(context);
+    //public GraphView(Context context, float[] values, String title, String[] horlabels, String[] verlabels, boolean type) {
+    public GraphView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+
+        // Populate some default attrs
+        // ------------
+        title = "Test";
+        horlabels = new String[0];
+        verlabels = new String[3];
+        values = new float[100];
+        type = LINE;
+
+        verlabels[0] = String.format("%d", -1);
+        verlabels[1] = String.format("%d", 0);
+        verlabels[2] = String.format("%d", 1);
+
+        for (int i = 0; i < 100; i++) {
+            values[i] = (float)Math.sin(i*Math.PI/50.0);
+        }
+        //-------------
+
         if (values == null)
             values = new float[0];
         else
@@ -62,6 +83,8 @@ public class GraphView extends View {
         float graphheight = height - (2 * border);
         float graphwidth = width - (2 * border);
 
+        // Set background draw color
+        canvas.drawColor(Color.BLACK);
 
         paint.setTextAlign(Align.LEFT);
         int vers = verlabels.length - 1;
