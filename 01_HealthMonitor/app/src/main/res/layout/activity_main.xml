@@ -129,10 +129,11 @@
 
     </LinearLayout>
 
-    <FrameLayout
-        android:layout_width="590dp"
-        android:layout_height="247dp">
-
-    </FrameLayout>
+    <view
+        android:id="@+id/graphView"
+        class="com.example.hawx.cse535_healthmonitor.GraphView"
+        id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </LinearLayout>
