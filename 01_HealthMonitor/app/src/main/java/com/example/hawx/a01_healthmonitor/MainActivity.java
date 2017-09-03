@@ -1,3 +1,13 @@
+//
+//
+// Class: CSE535, Fall 2017
+// Assignment 1
+// Group 25
+//
+// This is the main activity in the assignment. It presents the required
+// user interface and handles the necessary functionality.
+//
+//
 package com.example.hawx.a01_healthmonitor;
 
 import android.support.v7.app.AppCompatActivity;
@@ -22,9 +32,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Connect listeners
         findViewById(R.id.brun).setOnClickListener(this);
         findViewById(R.id.bstop).setOnClickListener(this);
 
+        // Instantiate the Graph View
         FrameLayout fLayout = (FrameLayout)findViewById(R.id.framedraw);
         mUptV = new float[NUM_RECORD_MAX];
         String[] horizmark = new String[]{"2700", "2750", "2800", "2850", "2900","3000","3050", "3100"};
@@ -32,8 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mGview = new GraphView(this, mUptV, "Group 25's HealthMonitor", horizmark, vertimark, true);
         fLayout.addView(mGview);
 
-
-        //This part is optional!
+        // Dummy handler for radio button changes
         RadioGroup radioGroup = (RadioGroup) findViewById(R.id.bgroup);
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener(){
             @Override
@@ -47,9 +59,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         });
-
-
     }
+
+    // Handle on-click events for Run/Stop buttons
     @Override
     public void onClick(View vinfo) {
         switch (vinfo.getId()){
@@ -63,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    // Run button handler
     private void onRunBtn() {
         if (mRunning) {
             mHandler.removeCallbacks(mJob);
@@ -73,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mHandler.post(mJob);
     }
 
+    // Stop button handler
     private void onStopBtn() {
         mGview.setValues(new float[0]);
         mGview.invalidate();
@@ -92,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    // Update graph data
     private void updateData() {
         Random myRandom = new Random();
         final int BOUNDARY_INT = 9;

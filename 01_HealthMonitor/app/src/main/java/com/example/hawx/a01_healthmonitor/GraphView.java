@@ -1,3 +1,15 @@
+//
+//
+// Class: CSE535, Fall 2017
+// Assignment 1
+// Group 25
+//
+// This is the graph view object. It is responsible for drawing the line graph
+// in the main activity. The code was originally provided by the instructor
+// for the assignment. It was modified by the group to fit the drawing requirements.
+//
+//
+
 package com.example.hawx.a01_healthmonitor;
 import android.content.Context;
 import android.graphics.Canvas;
