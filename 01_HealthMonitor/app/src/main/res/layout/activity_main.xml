@@ -76,7 +76,7 @@
                 <EditText
                     android:id="@+id/editText3"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="31dp"
                     android:ems="10"
                     android:inputType="textPersonName" />
             </LinearLayout>
@@ -93,6 +93,7 @@
                     android:text="Sex" />
 
                 <RadioGroup
+                    android:id="@+id/bgroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="0.72">
@@ -116,22 +117,25 @@
         <Button
             android:id="@+id/brun"
             android:layout_width="33dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="#00ff00"
             android:text="Run" />
 
         <Button
             android:id="@+id/bstop"
+            style="@style/Widget.AppCompat.Button"
             android:layout_width="37dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="#ff0000"
             android:text="Stop" />
 
     </LinearLayout>
 
     <FrameLayout
-        android:layout_width="590dp"
-        android:layout_height="247dp">
+        android:id="@+id/framedraw"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="0.97">
 
     </FrameLayout>
 
