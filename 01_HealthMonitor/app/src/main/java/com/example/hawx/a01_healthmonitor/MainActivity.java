@@ -28,8 +28,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         FrameLayout fLayout = (FrameLayout)findViewById(R.id.framedraw);
         mUptV = new float[NUM_RECORD_MAX];
         String[] horizmark = new String[]{"2700", "2750", "2800", "2850", "2900","3000","3050", "3100"};
-        String[] vertimark = new String[]{"500", "1000", "1500", "2000", "2500"};
-        mGview = new GraphView(this, mUptV, "Gruop25's HealthMonitor", horizmark, vertimark, true);
+        String[] vertimark = new String[]{"2000", "1500", "1000", "500", "0"};
+        mGview = new GraphView(this, mUptV, "Group 25's HealthMonitor", horizmark, vertimark, true);
         fLayout.addView(mGview);
 
 

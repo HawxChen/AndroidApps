@@ -52,7 +52,7 @@ public class GraphView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        float border = 20;
+        float border = 60;
         float horstart = border * 2;
         float height = getHeight();
         float width = getWidth() - 1;
@@ -64,7 +64,8 @@ public class GraphView extends View {
 
         // Set background draw color
         canvas.drawColor(Color.BLACK);
-        
+        paint.setTextSize(40);
+
         paint.setTextAlign(Align.LEFT);
         int vers = verlabels.length - 1;
         for (int i = 0; i < verlabels.length; i++) {
@@ -113,7 +114,7 @@ public class GraphView extends View {
                     float h = graphheight * rat;
                     if (i > 0)
                         paint.setColor(Color.GREEN);
-                    paint.setStrokeWidth(2.0f);
+                    paint.setStrokeWidth(8.0f);
 
                     canvas.drawLine(((i - 1) * colwidth) + (horstart + 1) + halfcol, (border - lasth) + graphheight, (i * colwidth) + (horstart + 1) + halfcol, (border - h) + graphheight, paint);
                     lasth = h;
