@@ -1,4 +1,4 @@
-package com.example.hawx.cse535_healthmonitor;
+package com.example.hawx.a01_healthmonitor;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
