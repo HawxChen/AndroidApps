@@ -123,7 +123,6 @@
 
         <Button
             android:id="@+id/bstop"
-            style="@style/Widget.AppCompat.Button"
             android:layout_width="37dp"
             android:layout_height="match_parent"
             android:background="#ff0000"
