@@ -10,7 +10,6 @@ import android.util.Log;
  */
 
 //Reference: https://stackoverflow.com/questions/7229450/sqliteopenhelper-creating-database-on-sd-card
-
 public class SDSQLiteHelper {
     private static final String TAG  = "DatabaseHelper";
     public static final File DB_FILE = Environment.getExternalStorageDirectory();
@@ -19,7 +18,7 @@ public class SDSQLiteHelper {
     private String mTableNameLastOpen; //Take convenience of this project.
     private SQLiteDatabase db;
 
-    private static class SDSQLiteSchema {
+    public static class SDSQLiteSchema {
         public static final String INCREASE_ID = "0";
         public static final String TS_FIELD = "TIMESTAMP";
         public static final String X_FIELD = "X";
@@ -31,9 +30,11 @@ public class SDSQLiteHelper {
     {
         try
         {
-            deleteDB();
-            db = SQLiteDatabase.openDatabase(DB_FILE_PATH
-                    + File.separator + DB_NAME, null,SQLiteDatabase.OPEN_READWRITE);
+            Log.e(TAG,"DB Path : " + DB_FILE_PATH  + File.separator + DB_NAME);
+            //db = SQLiteDatabase.openDatabase(DB_FILE_PATH + File.separator + DB_NAME, null,SQLiteDatabase.OPEN_READWRITE);
+            db = SQLiteDatabase.openOrCreateDatabase(DB_FILE_PATH + File.separator + DB_NAME, null);
+            Log.e(TAG, "Successful DB: " + db.toString());
+
         }
         catch (SQLiteException ex)
         {
@@ -48,18 +49,19 @@ public class SDSQLiteHelper {
     }
 
 
-    private void createTables(String tableName)
+    public void createTables(String tableName)
     {
         //https://sqlite.org/autoinc.html
         //https://www.techonthenet.com/sql/tables/create_table.php
         mTableNameLastOpen = tableName;
-        final String CMD = "CREATE TABLE " + tableName + " ( "
+        String CMD = "CREATE TABLE " + tableName + " ( "
                 + SDSQLiteSchema.INCREASE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + SDSQLiteSchema.TS_FIELD + " INTEGER NOT NULL, "
                 + SDSQLiteSchema.X_FIELD + " REAL NOT NULL, "
                 + SDSQLiteSchema.Y_FIELD + " REAL NOT NULL, "
-                + SDSQLiteSchema.Z_FIELD + " REAL NOT NULL, " + "); ";
+                + SDSQLiteSchema.Z_FIELD + " REAL NOT NULL " + "); ";
 
+        Log.e(TAG, "Creating Table: " + db.toString());
         db.execSQL(CMD);
     }
 
@@ -68,7 +70,7 @@ public class SDSQLiteHelper {
         db.close();
     }
 
-    public void deleteDB()
+    public static void deleteDB()
     {
         SQLiteDatabase.deleteDatabase(new File(DB_FILE_PATH
                 + File.separator + DB_NAME));

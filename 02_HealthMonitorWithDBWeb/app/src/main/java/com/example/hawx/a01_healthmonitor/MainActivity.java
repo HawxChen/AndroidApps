@@ -11,6 +11,10 @@
 package com.example.hawx.a01_healthmonitor;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
@@ -18,10 +22,10 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.util.Log;
 
-import java.util.Random;;
-
-import com.example.hawx.a01_healthmonitor.SDSQLiteHelper;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity implements View.OnClickListener {
     private float[] mUptV;
@@ -36,6 +40,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private EditText mIDInput;
     private EditText mAgeInput;
     private RadioButton mSexBtn;
+    private SDSQLiteHelper sddbhelper;
+    private SQLiteDatabase sddb;
+    private HashMap<String, Boolean> createdTableName = new HashMap();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,16 +54,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
         findViewById(R.id.bstop).setOnClickListener(this);
         findViewById(R.id.bupload).setOnClickListener(this);
         findViewById(R.id.bdownload).setOnClickListener(this);
+        mNameInput = findViewById(R.id.nameText);
+        mAgeInput = findViewById(R.id.ageText);
+        mIDInput = findViewById(R.id.idText);
+
 
         // Instantiate the Graph View
-        FrameLayout fLayout = (FrameLayout)findViewById(R.id.framedraw);
+        FrameLayout fLayout = findViewById(R.id.framedraw);
         mUptV = new float[NUM_RECORD_MAX];
         String[] horizmark = new String[]{"2700", "2750", "2800", "2850", "2900","3000","3050", "3100"};
         String[] vertimark = new String[]{"2000", "1500", "1000", "500", "0"};
         mGview = new GraphView(this, mUptV, "Group 25's HealthMonitor", horizmark, vertimark, true);
         fLayout.addView(mGview);
 
-        mNameInput = findViewById(R.id.editText);
         // Dummy handler for radio button changes
         RadioGroup radioGroup = (RadioGroup) findViewById(R.id.bgroup);
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener(){
@@ -71,8 +81,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
             }
         });
+        mSexBtn = findViewById(radioGroup.getCheckedRadioButtonId());
+        SDSQLiteHelper.deleteDB();
+        sddbhelper = new SDSQLiteHelper();
+        sddbhelper.createTables(buildConcatTableName());
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stoptAccSensService();
+        mRunning = false;
+    }
     // Handle on-click events for Run/Stop buttons
     @Override
     public void onClick(View vinfo) {
@@ -93,15 +113,51 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
     }
 
+    private String buildConcatTableName() {
+         mConcatName = mNameInput.getText().toString() + "_"
+                + mIDInput.getText().toString() + "_"
+                + mAgeInput.getText().toString() + "_"
+                + mSexBtn.getText().toString();
+        return mConcatName;
+    }
+
     // Run button handler
     private void onRunBtn() {
         if (mRunning) {
             mHandler.removeCallbacks(mJob);
             mUptV = new float[0];
         }
+
+        buildConcatTableName();
+
+        if(!createdTableName.containsKey(mConcatName)) {
+            sddbhelper.createTables(mConcatName);
+            createdTableName.put(mConcatName, true);
+        }
+
+
+        if(!mTableNameCurrentOpen.equals(mConcatName)) {
+            sddb = sddbhelper.getWritableDatabase(mConcatName);
+            mTableNameCurrentOpen = mConcatName;
+            startAccSensService();
+        }
+
         mJob = new HMonitorRunnable();
         mRunning = true;
         mHandler.post(mJob);
+    }
+
+    private void startAccSensService(){
+        stoptAccSensService();
+        Intent intent = new Intent(AccSensService.ACC_ACTION);
+        intent.setPackage(getPackageName());
+        intent.putExtra(AccSensService.KEY_TBNAME, mTableNameCurrentOpen);
+        startService(intent);
+    }
+
+    private void stoptAccSensService(){
+        Intent intent = new Intent(this, AccSensService.class);
+        stopService(intent);
     }
 
     // Stop button handler
@@ -112,43 +168,91 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     }
 
+    private void onUploadBtn() {
+    }
+
+    private void onDownloadBtn() {
+    }
+
+    private void redrawView() {
+        mGview.setValues(mUptV);
+        mGview.invalidate();
+    }
     private class HMonitorRunnable implements Runnable{
         @Override
         public void run() {
             if(mRunning){
-                updateData();
-                mGview.setValues(mUptV);
-                mGview.invalidate();
-                mHandler.postDelayed(this, 200);
+                new RedrawJob().execute();
             }
         }
     }
 
     // Update graph data
-    private void updateData() {
-        Random myRandom = new Random();
-        final int BOUNDARY_INT = 9;
-        float[] nextUptV = new float[NUM_RECORD_MAX];
-        if(mUptV == null || mUptV.length == 0){
-            for(int i = 0; i < NUM_RECORD_MAX - 1; i++){
-                nextUptV[i] = myRandom.nextInt(BOUNDARY_INT);
-            }
-        }else{
-            final int BATCH_UPDATE = 1; //Optional value!
-            for(int i = 0; i < NUM_RECORD_MAX - BATCH_UPDATE; i++){
-                nextUptV[i] = mUptV[i + BATCH_UPDATE];
-            }
-            for(int i = NUM_RECORD_MAX - BATCH_UPDATE; i< NUM_RECORD_MAX; i++){
-                nextUptV[i] = myRandom.nextInt(BOUNDARY_INT);
-            }
-
+    private void updateAccValues(ArrayList<AccSensService.AccSensData> accData) {
+        int len = accData.size();
+        float[] values = new float[len * 3];
+        for(int i = 0; i < len; i++){
+            AccSensService.AccSensData tmp = accData.get(i);
+            values[i * 3 ] = (float) tmp.x;
+            values[i * 3 + 1] = (float) tmp.y;
+            values[i * 3 + 2] = (float) tmp.z;
         }
-        mUptV = nextUptV;
+        mUptV = values;
     }
 
-    private void onUploadBtn() {
+    private static AccSensService.AccSensData translateRecord(Cursor cursor){
+        AccSensService.AccSensData ret_data = new AccSensService.AccSensData();
+        ret_data.x = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD));
+        ret_data.y = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD));
+        ret_data.z = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD));
+
+        return  ret_data;
     }
 
-    private void onDownloadBtn() {
+    private class RedrawJob extends AsyncTask<Void, Void, ArrayList<AccSensService.AccSensData>> {
+        @Override
+        protected ArrayList<AccSensService.AccSensData> doInBackground(Void... params) {
+            return readfromTable();
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<AccSensService.AccSensData> sensorDatas) {
+            updateAccValues(sensorDatas);
+            redrawView();
+            mHandler.postDelayed(mJob, 1000);
+        }
+
+        private  ArrayList<AccSensService.AccSensData>  readfromTable() {
+            // Read the prior ten second data
+            final int PREV_10_SECS = 10;
+            long now = System.currentTimeMillis();
+            final long startingTS = now - PREV_10_SECS * 1000;
+            Cursor cursor =  sddb.query(
+                    mTableNameCurrentOpen,
+                    new String[]{SDSQLiteHelper.SDSQLiteSchema.X_FIELD,
+                            SDSQLiteHelper.SDSQLiteSchema.Y_FIELD,
+                            SDSQLiteHelper.SDSQLiteSchema.Z_FIELD,
+                            SDSQLiteHelper.SDSQLiteSchema.TS_FIELD},
+                    SDSQLiteHelper.SDSQLiteSchema.TS_FIELD + " >= ?",
+                    new String[]{String.valueOf(startingTS)},
+                    null,
+                    null,
+                    SDSQLiteHelper.SDSQLiteSchema.TS_FIELD + " ASC"
+            );
+
+            if(cursor == null) return new ArrayList<>(0);
+
+            final int INIT_CAPACITY = PREV_10_SECS + 5;
+            ArrayList<AccSensService.AccSensData> dataRecord = new ArrayList<>(INIT_CAPACITY);
+            if(cursor.moveToFirst()){
+                do{
+                    AccSensService.AccSensData data = translateRecord(cursor);
+                    dataRecord.add(data);
+                }while (cursor.moveToNext());
+            }
+            cursor.close();
+            Log.e("DEBUG", "Record Size:" + dataRecord.size());
+            return dataRecord;
+        }
     }
 }
