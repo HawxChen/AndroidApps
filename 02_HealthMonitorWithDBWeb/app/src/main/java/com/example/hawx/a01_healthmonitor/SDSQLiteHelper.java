@@ -31,8 +31,8 @@ public class SDSQLiteHelper {
         try
         {
             Log.e(TAG,"DB Path : " + DB_FILE_PATH  + File.separator + DB_NAME);
-            //db = SQLiteDatabase.openDatabase(DB_FILE_PATH + File.separator + DB_NAME, null,SQLiteDatabase.OPEN_READWRITE);
-            db = SQLiteDatabase.openOrCreateDatabase(DB_FILE_PATH + File.separator + DB_NAME, null);
+            db = SQLiteDatabase.openDatabase(DB_FILE_PATH + File.separator + DB_NAME, null,SQLiteDatabase.OPEN_READWRITE);
+            //db = SQLiteDatabase.openOrCreateDatabase(DB_FILE_PATH + File.separator + DB_NAME, null);
             Log.e(TAG, "Successful DB: " + db.toString());
 
         }
