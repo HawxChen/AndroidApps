@@ -84,7 +84,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mSexBtn = findViewById(radioGroup.getCheckedRadioButtonId());
         SDSQLiteHelper.deleteDB();
         sddbhelper = new SDSQLiteHelper();
-        sddbhelper.createTables(buildConcatTableName());
+        //sddbhelper.createTables(buildConcatTableName());
     }
 
     @Override
