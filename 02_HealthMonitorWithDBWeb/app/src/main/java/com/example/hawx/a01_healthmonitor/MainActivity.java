@@ -138,7 +138,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         if(!mTableNameCurrentOpen.equals(mConcatName)) {
             sddb = sddbhelper.getWritableDatabase(mConcatName);
-            mTableNameCurrentOpen = mConcatName;
+            mTableNameCurrentOpen = "\"" + mConcatName + "\"";
             startAccSensService();
         }
 
