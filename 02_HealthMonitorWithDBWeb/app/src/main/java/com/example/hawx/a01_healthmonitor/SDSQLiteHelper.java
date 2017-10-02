@@ -30,11 +30,12 @@ public class SDSQLiteHelper {
     {
         try
         {
+            // Open the database (create if it does not exist)
             Log.e(TAG,"DB Path : " + DB_FILE_PATH  + File.separator + DB_NAME);
-            db = SQLiteDatabase.openDatabase(DB_FILE_PATH + File.separator + DB_NAME, null,SQLiteDatabase.OPEN_READWRITE);
-            //db = SQLiteDatabase.openOrCreateDatabase(DB_FILE_PATH + File.separator + DB_NAME, null);
+            db = SQLiteDatabase.openDatabase(DB_FILE_PATH + File.separator + DB_NAME,
+                                             null,
+                                             SQLiteDatabase.OPEN_READWRITE | SQLiteDatabase.CREATE_IF_NECESSARY);
             Log.e(TAG, "Successful DB: " + db.toString());
-
         }
         catch (SQLiteException ex)
         {
