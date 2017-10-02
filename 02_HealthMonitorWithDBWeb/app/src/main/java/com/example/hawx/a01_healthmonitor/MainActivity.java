@@ -43,6 +43,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private SDSQLiteHelper sddbhelper;
     private SQLiteDatabase sddb;
     private HashMap<String, Boolean> createdTableName = new HashMap();
+    private static final String TAG  = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,6 +124,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     // Run button handler
     private void onRunBtn() {
+        Log.d(TAG, "onRunBtn");
+
         if (mRunning) {
             mHandler.removeCallbacks(mJob);
             mUptV = new float[0];
@@ -136,11 +139,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
 
 
-        if(!mTableNameCurrentOpen.equals(mConcatName)) {
+        //if(!mTableNameCurrentOpen.equals(mConcatName)) {
             sddb = sddbhelper.getWritableDatabase(mConcatName);
             mTableNameCurrentOpen = "\"" + mConcatName + "\"";
             startAccSensService();
-        }
+        //}
 
         mJob = new HMonitorRunnable();
         mRunning = true;
@@ -148,9 +151,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
 
     private void startAccSensService(){
+        Log.d(TAG, "Starting AccSensService");
         stoptAccSensService();
-        Intent intent = new Intent(AccSensService.ACC_ACTION);
-        intent.setPackage(getPackageName());
+        Intent intent = new Intent(this, AccSensService.class);
         intent.putExtra(AccSensService.KEY_TBNAME, mTableNameCurrentOpen);
         startService(intent);
     }
@@ -165,7 +168,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mGview.setValues(new float[0]);
         mGview.invalidate();
         mRunning = false;
-
+        stoptAccSensService();
     }
 
     private void onUploadBtn() {
