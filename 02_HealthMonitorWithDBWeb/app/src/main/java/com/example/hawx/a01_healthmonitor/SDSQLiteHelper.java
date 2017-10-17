@@ -16,6 +16,7 @@ public class SDSQLiteHelper {
     private String mTableNameLastOpen; //Take convenience of this project.
     private String db_path;
     private SQLiteDatabase db;
+    private String DB_NAME      = "Group25.db";
 
     public static class SDSQLiteSchema {
         public static final String INCREASE_ID = "ID";
@@ -30,8 +31,6 @@ public class SDSQLiteHelper {
 
         File   DB_FILE      = Environment.getExternalStorageDirectory();
         String DB_FILE_PATH = DB_FILE.getAbsolutePath();
-        String DB_NAME      = "Group25.db";
-
         db_path = DB_FILE_PATH  + File.separator + DB_NAME;
 
         try
@@ -76,6 +75,14 @@ public class SDSQLiteHelper {
     public void closeDB()
     {
         db.close();
+    }
+
+    public String get_db_path() {
+        return db_path;
+    }
+
+    public String get_db_name() {
+        return DB_NAME;
     }
 
     public static void deleteDB()

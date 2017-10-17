@@ -11,6 +11,7 @@
 package com.example.hawx.a01_healthmonitor;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -23,9 +24,25 @@ import android.widget.FrameLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.util.Log;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.DataOutputStream;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.HostnameVerifier;
+
 
 public class MainActivity extends Activity implements View.OnClickListener {
     private float[] mUptV;
@@ -44,6 +61,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private SQLiteDatabase sddb;
     private HashMap<String, Boolean> createdTableName = new HashMap();
     private static final String TAG  = "MainActivity";
+    private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
+    private boolean isUploading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -172,7 +191,125 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
 
     private void onUploadBtn() {
+        if(isUploading) return;
+
+
+        ConnectivityManager connMgrCheck = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        try {
+            NetworkInfo netInfo = connMgrCheck.getActiveNetworkInfo();
+            if(!netInfo.isConnected() || null == netInfo) {
+                Log.e(TAG, "!!!!!!!!!!! Network Error !!!!!!!!!!!!!!!!");
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if(! (new File(sddbhelper.get_db_path())).exists()) {
+            Log.e(TAG, "!!!!!!!!!!! DB doesn't EXIST !!!!!!!!!!!!!!!!");
+            return;
+        }
+        isUploading = true;
+        new UploadDBTask().execute();
     }
+    private class UploadDBTask extends AsyncTask<String, Void, Boolean> {
+        @Override
+        protected void onPreExecute() {
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+
+            boolean result = false;
+            try {
+                result =doUploadDB();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return result;
+        }
+
+        //Handle SSL and HTTP connection
+        private HttpURLConnection returnHttpSSLConn () throws Exception {
+            // How to use SSL and X509TrustManager
+            //Reference: https://www.programcreek.com/java-api-examples/javax.net.ssl.X509TrustManager
+            //Reference: http://pankajmalhotra.com/Skip-SSL-HostName-Verification-Java-HttpsURLConnection
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier(){
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }});
+
+            SSLContext sslctxt = null;
+            sslctxt = SSLContext.getInstance("TLS");
+            //Reference: http://www.javased.com/index.php?api=java.security.cert.X509Certificate
+            //Reference: Follow the naming of parameters
+            sslctxt.init(null,  new X509TrustManager[]{new X509TrustManager(){
+                public void checkClientTrusted(X509Certificate[] chain, String authType)  {}
+                public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0]; }}}, new SecureRandom());
+
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslctxt.getSocketFactory());
+            return (HttpURLConnection) new URL(UP_URL).openConnection();
+        }
+
+        private boolean doUploadDB() throws Exception {
+            final String mark_boundary = "XXXXXXXXXXXXX";
+            HttpURLConnection httpSSLconn = returnHttpSSLConn();
+
+            buildConnection(httpSSLconn, mark_boundary);
+            DataOutputStream httpPacket = new DataOutputStream(httpSSLconn.getOutputStream());
+
+            //Write Headers
+            httpPacket.writeBytes("--" + mark_boundary + "\r\n");
+            httpPacket.writeBytes("Content-Disposition: form-data; name=\"" +
+                    "uploaded_file" + "\";filename=\"" +
+                    sddbhelper.get_db_name() + "\"\r\n\r\n");
+
+            //Write packets
+            FileInputStream db_file = new FileInputStream(sddbhelper.get_db_path());
+            byte[] output_buf = new byte[4096];
+            int cnt = 0;
+            while((cnt = db_file.read(output_buf)) > 0){
+                httpPacket.write(output_buf, 0, cnt);
+            }
+
+            //Write Endings
+            httpPacket.writeBytes("\r\n--" + mark_boundary + "--\r\n");;
+
+
+            httpPacket.flush();
+            httpPacket.close();
+            final int status = httpSSLconn.getResponseCode();
+            if (status != HttpURLConnection.HTTP_OK) {
+                Log.e("uploadDb", "Failed with http status: " + status);
+                return false;
+            }
+
+            Log.e(TAG, "Finish Upload!!!");
+            return true;
+        }
+
+        // Function template
+        // https://mttkay.github.io/blog/2013/03/02/herding-http-requests-or-why-your-keep-alive-connection-may-be-dead/
+        private void buildConnection(HttpURLConnection conn, String mark_boundary) throws Exception {
+            final int connectTimeout = 50000;
+            final int readTimeout = 50000;
+            conn.setConnectTimeout(connectTimeout);
+            conn.setReadTimeout(readTimeout);
+            conn.setUseCaches(false);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Connection", "Keep-Alive");
+            conn.setRequestProperty("Cache-Control", "no-cache");
+            //boundary usage: https://stackoverflow.com/questions/11766878/sending-files-using-post-with-httpurlconnection
+            conn.setRequestProperty(
+                    "Content-Type", "multipart/form-data;boundary=" + mark_boundary);
+        }
+    }
+
+
 
     private void onDownloadBtn() {
     }
