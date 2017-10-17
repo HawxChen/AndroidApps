@@ -146,8 +146,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         Log.d(TAG, "onRunBtn");
 
         if (mRunning) {
-            mHandler.removeCallbacks(mJob);
-            mUptV = new float[0];
+            // mHandler.removeCallbacks(mJob);
+            // mUptV = new float[0];
+            return;
         }
 
         buildConcatTableName();
