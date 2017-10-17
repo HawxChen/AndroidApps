@@ -16,6 +16,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.util.Log;
 import android.view.View;
 
 /**
@@ -38,11 +39,11 @@ public class GraphView extends View {
     public GraphView(Context context, float[] values, String title, String[] horlabels, String[] verlabels, boolean type) {
         super(context);
         if (values == null)
-            values = new float[0];
+            this.values = new float[0];
         else
             this.values = values;
         if (title == null)
-            title = "";
+            this.title = "";
         else
             this.title = title;
         if (horlabels == null)
@@ -68,8 +69,8 @@ public class GraphView extends View {
         float horstart = border * 2;
         float height = getHeight();
         float width = getWidth() - 1;
-        float max = getMax();
-        float min = getMin();
+        float max = 10;//getMax();
+        float min = -10;//getMin();
         float diff = max - min;
         float graphheight = height - (2 * border);
         float graphwidth = width - (2 * border);
@@ -89,7 +90,7 @@ public class GraphView extends View {
         }
         int hors = horlabels.length - 1;
         for (int i = 0; i < horlabels.length; i++) {
-            paint.setColor(Color.DKGRAY);
+            paint.setColor(Color.GRAY);
             float x = ((graphwidth / hors) * i) + horstart;
             canvas.drawLine(x, height - border, x, border, paint);
             paint.setTextAlign(Align.CENTER);
@@ -104,33 +105,34 @@ public class GraphView extends View {
         paint.setTextAlign(Align.CENTER);
         canvas.drawText(title, (graphwidth / 2) + horstart, border - 4, paint);
 
-        if (max != min) {
-            paint.setColor(Color.LTGRAY);
-            if (type == BAR) {
-                float datalength = values.length;
-                float colwidth = (width - (2 * border)) / datalength;
-                for (int i = 0; i < values.length; i++) {
-                    float val = values[i] - min;
-                    float rat = val / diff;
-                    float h = graphheight * rat;
-                    canvas.drawRect((i * colwidth) + horstart, (border - h) + graphheight, ((i * colwidth) + horstart) + (colwidth - 1), height - (border - 1), paint);
-                }
-            } else {
-                float datalength = values.length;
-                float colwidth = (width - (2 * border)) / datalength;
-                float halfcol = colwidth / 2;
-                float lasth = 0;
-                for (int i = 0; i < values.length; i++) {
-                    float val = values[i] - min;
-                    float rat = val / diff;
-                    float h = graphheight * rat;
-                    if (i > 0)
-                        paint.setColor(Color.GREEN);
-                    paint.setStrokeWidth(8.0f);
+        int stride = 3; // Data stride (number of components in the data, e.g. X, Y, Z)
+        int colors[] = { Color.RED, Color.BLUE, Color.GREEN }; // Colors to use when graphing lines
 
-                    canvas.drawLine(((i - 1) * colwidth) + (horstart + 1) + halfcol, (border - lasth) + graphheight, (i * colwidth) + (horstart + 1) + halfcol, (border - h) + graphheight, paint);
-                    lasth = h;
+        // Loop through, graphing the different lines
+        for (int line_index = 0; line_index < stride; line_index++) {
+            int datalength = values.length / stride;
+            float colwidth = (width - (2 * border)) / 10;//datalength;
+            float halfcol = colwidth / 2;
+            float lasth = 0;
+            paint.setColor(colors[line_index % stride]);
+            paint.setStrokeWidth(8.0f);
+
+            // Draw the line segments for this line
+            for (int i = 0; i < datalength; i++) {
+                float val = values[line_index + i * stride] - min;
+                float rat = val / diff;
+                float h = graphheight * rat;
+
+                //Log.d("Graph", String.format("Graphing line %d, point %d, value %f", j, i, val));
+
+                if (i > 0) { // Need two points to draw a line, start with the second point
+                    canvas.drawLine(
+                            ((i - 1) * colwidth) + (horstart + 1),
+                            (border - lasth) + graphheight,
+                            (i * colwidth) + (horstart + 1),
+                            (border - h) + graphheight, paint);
                 }
+                lasth = h;
             }
         }
     }
