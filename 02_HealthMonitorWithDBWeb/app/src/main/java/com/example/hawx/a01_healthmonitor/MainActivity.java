@@ -1,13 +1,14 @@
 //
 //
 // Class: CSE535, Fall 2017
-// Assignment 1
+// Assignment 2
 // Group 25
 //
 // This is the main activity in the assignment. It presents the required
 // user interface and handles the necessary functionality.
 //
 //
+
 package com.example.hawx.a01_healthmonitor;
 
 import android.app.Activity;
@@ -26,8 +27,7 @@ import android.widget.RadioGroup;
 import android.util.Log;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-
-
+import android.widget.Toast;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.net.HttpURLConnection;
@@ -42,7 +42,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.HostnameVerifier;
-
 
 public class MainActivity extends Activity implements View.OnClickListener {
     private float[] mUptV;
@@ -64,6 +63,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
     private boolean isUploading = false;
 
+    //
+    // onCreate
+    //
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,19 +103,26 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
             }
         });
+
         mSexBtn = findViewById(radioGroup.getCheckedRadioButtonId());
         SDSQLiteHelper.deleteDB();
         sddbhelper = new SDSQLiteHelper();
         //sddbhelper.createTables(buildConcatTableName());
     }
 
+    //
+    // onDestroy
+    //
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stoptAccSensService();
+        stopAccSensService();
         mRunning = false;
     }
+
+    //
     // Handle on-click events for Run/Stop buttons
+    //
     @Override
     public void onClick(View vinfo) {
         switch (vinfo.getId()){
@@ -141,7 +150,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         return mConcatName;
     }
 
+    //
     // Run button handler
+    //
     private void onRunBtn() {
         Log.d(TAG, "onRunBtn");
 
@@ -169,52 +180,98 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mHandler.post(mJob);
     }
 
+    //
+    // Start accelerometre services
+    //
     private void startAccSensService(){
         Log.d(TAG, "Starting AccSensService");
-        stoptAccSensService();
+        stopAccSensService();
         Intent intent = new Intent(this, AccSensService.class);
         intent.putExtra(AccSensService.KEY_TBNAME, mTableNameCurrentOpen);
         startService(intent);
     }
 
-    private void stoptAccSensService(){
+    //
+    // Stop accelerometre services
+    //
+    private void stopAccSensService(){
         Intent intent = new Intent(this, AccSensService.class);
         stopService(intent);
     }
 
+    //
     // Stop button handler
+    //
     private void onStopBtn() {
         mGview.setValues(new float[0]);
         mGview.invalidate();
         mRunning = false;
-        stoptAccSensService();
+        stopAccSensService();
     }
 
+    //
+    // Upload button handler
+    //
     private void onUploadBtn() {
-        if(isUploading) return;
+        Log.d(TAG, "onUploadBtn");
 
+        if(isUploading) {
+            // Already uploading, wait for timeout before attempting to upload again...
+            Toast.makeText(getApplicationContext(), "Upload already in progress!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        ConnectivityManager connMgrCheck = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        //
+        // Check for basic network connectivity
+        //
         try {
+            ConnectivityManager connMgrCheck = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo netInfo = connMgrCheck.getActiveNetworkInfo();
             if(!netInfo.isConnected() || null == netInfo) {
                 Log.e(TAG, "!!!!!!!!!!! Network Error !!!!!!!!!!!!!!!!");
+                Toast.makeText(getApplicationContext(), "Error: Network not connected!", Toast.LENGTH_SHORT).show();
                 return;
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        if(! (new File(sddbhelper.get_db_path())).exists()) {
+        Log.d(TAG, "Network ok");
+
+        //
+        // Ensure database has been created
+        //
+        if(!(new File(sddbhelper.get_db_path())).exists()) {
             Log.e(TAG, "!!!!!!!!!!! DB doesn't EXIST !!!!!!!!!!!!!!!!");
+            Toast.makeText(getApplicationContext(), "Error: Database does not yet exist!", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        Log.d(TAG, "Database does exist...");
+
+        //
+        // Begin uploading database in the background
+        //
+        Toast.makeText(getApplicationContext(), "Starting Upload...", Toast.LENGTH_SHORT).show();
         isUploading = true;
         new UploadDBTask().execute();
     }
+
+    //
+    // Background task to upload the database to the remote server
+    //
     private class UploadDBTask extends AsyncTask<String, Void, Boolean> {
         @Override
         protected void onPreExecute() {
+        }
+
+        @Override
+        protected void onPostExecute(Boolean Result) {
+            if (Result) {
+                Toast.makeText(getApplicationContext(), "Upload successful!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_SHORT).show();
+            }
         }
 
         @Override
@@ -260,13 +317,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
             buildConnection(httpSSLconn, mark_boundary);
             DataOutputStream httpPacket = new DataOutputStream(httpSSLconn.getOutputStream());
 
-            //Write Headers
+            // Write Headers
             httpPacket.writeBytes("--" + mark_boundary + "\r\n");
             httpPacket.writeBytes("Content-Disposition: form-data; name=\"" +
                     "uploaded_file" + "\";filename=\"" +
                     sddbhelper.get_db_name() + "\"\r\n\r\n");
 
-            //Write packets
+            // Write data
             FileInputStream db_file = new FileInputStream(sddbhelper.get_db_path());
             byte[] output_buf = new byte[4096];
             int cnt = 0;
@@ -274,19 +331,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 httpPacket.write(output_buf, 0, cnt);
             }
 
-            //Write Endings
+            // Write Endings
             httpPacket.writeBytes("\r\n--" + mark_boundary + "--\r\n");;
 
-
+            // Flush and close the connection
             httpPacket.flush();
             httpPacket.close();
             final int status = httpSSLconn.getResponseCode();
             if (status != HttpURLConnection.HTTP_OK) {
                 Log.e("uploadDb", "Failed with http status: " + status);
+                isUploading = false;
                 return false;
             }
 
             Log.e(TAG, "Finish Upload!!!");
+            isUploading = false;
             return true;
         }
 
@@ -309,15 +368,24 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
     }
 
-
-
+    //
+    // Download button handler
+    //
     private void onDownloadBtn() {
+        // TODO: Implemnet onDownloadBtn handler
     }
 
+    //
+    // Redraw view
+    //
     private void redrawView() {
         mGview.setValues(mUptV);
         mGview.invalidate();
     }
+
+    //
+    // Runnable to update the view
+    //
     private class HMonitorRunnable implements Runnable{
         @Override
         public void run() {
@@ -327,7 +395,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
     }
 
+    //
     // Update graph data
+    //
     private void updateAccValues(ArrayList<AccSensService.AccSensData> accData) {
         int len = accData.size();
         float[] values = new float[len * 3];
@@ -340,21 +410,28 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mUptV = values;
     }
 
+    //
+    // Load a sample object with data from an SQL query result
+    //
     private static AccSensService.AccSensData translateRecord(Cursor cursor){
         AccSensService.AccSensData ret_data = new AccSensService.AccSensData();
         ret_data.x = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD));
         ret_data.y = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD));
         ret_data.z = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD));
 
-        return  ret_data;
+        return ret_data;
     }
 
+    //
+    // Background task to fetch and draw the last ten seconds of samples
+    //
     private class RedrawJob extends AsyncTask<Void, Void, ArrayList<AccSensService.AccSensData>> {
         @Override
         protected ArrayList<AccSensService.AccSensData> doInBackground(Void... params) {
             return readfromTable();
         }
 
+        // Redraw view after the samples have been retrievde
         @Override
         protected void onPostExecute(ArrayList<AccSensService.AccSensData> sensorDatas) {
             updateAccValues(sensorDatas);
@@ -362,7 +439,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
             mHandler.postDelayed(mJob, 1000);
         }
 
-        private  ArrayList<AccSensService.AccSensData>  readfromTable() {
+        // Load last ten seconds of samples from database
+        private ArrayList<AccSensService.AccSensData> readfromTable() {
             // Read the prior ten second data
             final int PREV_10_SECS = 10;
             long now = System.currentTimeMillis();
