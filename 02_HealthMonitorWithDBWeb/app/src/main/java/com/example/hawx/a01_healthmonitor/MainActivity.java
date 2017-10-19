@@ -65,9 +65,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private SQLiteDatabase sddb;
     private HashMap<String, Boolean> createdTableName = new HashMap();
     private static final String TAG  = "MainActivity";
-    //private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
-    private static final String UP_URL = "https://192.168.0.17/CSE535Fall17Folder/UploadToServer.php";
-    private static final String DOWN_URL = "https://192.168.0.17/CSE535Fall17Folder/Group25.db";
+    private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
+    //private static final String UP_URL = "https://192.168.0.17/CSE535Fall17Folder/UploadToServer.php";
+    private static final String DOWN_URL = "http://10.218.110.136/CSE535Fall17Folder/Group25.db";
+    //private static final String DOWN_URL = "https://192.168.0.17/CSE535Fall17Folder/Group25.db";
     private static final String DOWNLOAD_FILENAME = "CSE535_ASSIGNMENT2_Extra";
     private boolean isUploading = false;
 
