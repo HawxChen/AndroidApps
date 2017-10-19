@@ -37,7 +37,7 @@ public class SDSQLiteHelper {
         {
             // Open the database (create if it does not exist)
             Log.e(TAG,"DB Path: " + db_path);
-            db = SQLiteDatabase.openDatabase(db_path, null, SQLiteDatabase.OPEN_READWRITE | SQLiteDatabase.CREATE_IF_NECESSARY);
+            db = SQLiteDatabase.openOrCreateDatabase(db_path, null);
             Log.e(TAG, "Successful DB: " + db.toString());
         }
         catch (SQLiteException ex)
@@ -68,7 +68,10 @@ public class SDSQLiteHelper {
 
         Log.e(TAG, "Creating Table in datbase " + db.toString());
         Log.e(TAG, "SQL Query: " + CMD);
+        db.beginTransaction();
         db.execSQL(CMD);
+        db.setTransactionSuccessful();
+        db.endTransaction();
         Log.e(TAG, "Success");
     }
 

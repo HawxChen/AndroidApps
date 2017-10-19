@@ -18,6 +18,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
 import android.widget.EditText;
@@ -28,6 +29,10 @@ import android.util.Log;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.widget.Toast;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.net.HttpURLConnection;
@@ -60,7 +65,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private SQLiteDatabase sddb;
     private HashMap<String, Boolean> createdTableName = new HashMap();
     private static final String TAG  = "MainActivity";
-    private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
+    //private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
+    private static final String UP_URL = "https://192.168.0.17/CSE535Fall17Folder/UploadToServer.php";
+    private static final String DOWN_URL = "https://192.168.0.17/CSE535Fall17Folder/Group25.db";
+    private static final String DOWNLOAD_FILENAME = "CSE535_ASSIGNMENT2_Extra";
     private boolean isUploading = false;
 
     //
@@ -84,8 +92,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         // Instantiate the Graph View
         FrameLayout fLayout = findViewById(R.id.framedraw);
         mUptV = new float[NUM_RECORD_MAX];
-        String[] horizmark = new String[]{"2700", "2750", "2800", "2850", "2900","3000","3050", "3100"};
-        String[] vertimark = new String[]{"2000", "1500", "1000", "500", "0"};
+        String[] horizmark = new String[]{"-10", "-9", "-8", "-7", "-6","-5","-4", "-3", "-2", "-1", "0"};
+        String[] vertimark = new String[]{"10", "0", "-10"};
         mGview = new GraphView(this, mUptV, "Group 25's HealthMonitor", horizmark, vertimark, true);
         fLayout.addView(mGview);
 
@@ -163,10 +171,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         buildConcatTableName();
 
-        if(!createdTableName.containsKey(mConcatName)) {
+//        if(!createdTableName.containsKey(mConcatName)) {
             sddbhelper.createTables(mConcatName);
-            createdTableName.put(mConcatName, true);
-        }
+//            createdTableName.put(mConcatName, true);
+//        }
 
 
         //if(!mTableNameCurrentOpen.equals(mConcatName)) {
@@ -372,8 +380,188 @@ public class MainActivity extends Activity implements View.OnClickListener {
     // Download button handler
     //
     private void onDownloadBtn() {
-        // TODO: Implemnet onDownloadBtn handler
+        // Stop if we are already running (simply use the stop button handler)
+        onStopBtn();
+
+        //
+        // Check for basic network connectivity
+        //
+        try {
+            ConnectivityManager connMgrCheck = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = connMgrCheck.getActiveNetworkInfo();
+            if(!netInfo.isConnected() || null == netInfo) {
+                Log.e(TAG, "!!!!!!!!!!! Network Error !!!!!!!!!!!!!!!!");
+                Toast.makeText(getApplicationContext(), "Error: Network not connected!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Log.d(TAG, "Network ok");
+
+        //
+        // Begin uploading database in the background
+        //
+        Toast.makeText(getApplicationContext(), "Starting Download...", Toast.LENGTH_SHORT).show();
+        new DownloadDBTask().execute();
     }
+
+    //
+    // Background task to download the database from the remote server
+    //
+    private class DownloadDBTask extends AsyncTask<String, Void, Boolean> {
+        @Override
+        protected void onPreExecute() {
+        }
+
+        // Genreic file copy method referenced from https://stackoverflow.com/questions/9292954/how-to-make-a-copy-of-a-file-in-android
+        public void copy(String src, String dst) throws IOException {
+            InputStream in = new FileInputStream(src);
+            try {
+                FileOutputStream out = new FileOutputStream(dst);
+                try {
+                    // Transfer bytes from in to out
+                    byte[] buf = new byte[1024];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                } finally {
+                    out.close();
+                }
+            } finally {
+                in.close();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean Result) {
+            if (Result) {
+                Toast.makeText(getApplicationContext(), "Download successful!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getApplicationContext(), "Download failed!", Toast.LENGTH_SHORT).show();
+            }
+
+            // Now copy downloaded database to expected location
+            sddbhelper.closeDB();
+
+            String src_path = Environment.getExternalStorageDirectory().getPath()+"/"+DOWNLOAD_FILENAME;
+            String dest_path = sddbhelper.get_db_path();
+            Log.d(TAG, "Copying " + src_path + " to " + dest_path);
+            try {
+                copy(src_path, dest_path);
+            } catch (Exception e) {
+                Log.d(TAG, "Error! Failed to copy!");
+                e.printStackTrace();
+            }
+
+            Log.d(TAG, "Ok! Reloading database");
+
+            // Re-load database to draw it
+            sddbhelper = new SDSQLiteHelper();
+            sddb = sddbhelper.getWritableDatabase(mConcatName);
+
+            // Draw it once (per assignment spec)
+            new RedrawJob().execute();
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+
+            boolean result = false;
+            try {
+                result = doDownloadDB();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return result;
+        }
+
+        //Handle SSL and HTTP connection
+        private HttpsURLConnection returnHttpSSLConn () throws Exception {
+            // How to use SSL and X509TrustManager
+            //Reference: https://www.programcreek.com/java-api-examples/javax.net.ssl.X509TrustManager
+            //Reference: http://pankajmalhotra.com/Skip-SSL-HostName-Verification-Java-HttpsURLConnection
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier(){
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }});
+
+            SSLContext sslctxt = null;
+            sslctxt = SSLContext.getInstance("TLS");
+            //Reference: http://www.javased.com/index.php?api=java.security.cert.X509Certificate
+            //Reference: Follow the naming of parameters
+            sslctxt.init(null,  new X509TrustManager[]{new X509TrustManager(){
+                public void checkClientTrusted(X509Certificate[] chain, String authType)  {}
+                public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0]; }}}, new SecureRandom());
+
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslctxt.getSocketFactory());
+            return (HttpsURLConnection) new URL(DOWN_URL).openConnection();
+        }
+
+        private Boolean doDownloadDB() throws Exception {
+            InputStream input = null;
+            FileOutputStream output = null;
+            HttpsURLConnection connection = null;
+            Log.d(TAG, "doDownloadDB");
+
+            try {
+                // Open HTTPS connection to server
+                Log.d(TAG, "Trying to open connection...");
+                connection = returnHttpSSLConn();
+                connection.connect();
+                Log.d(TAG, "Connected!");
+
+                // Check response code from server
+                if (connection.getResponseCode() != HttpsURLConnection.HTTP_OK) {
+                    Log.d(TAG,  "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage());
+                    return false;
+                }
+
+                int fileLength = connection.getContentLength();
+                Log.d(TAG, String.format("File length is %d bytes", fileLength));
+
+                // Download the file
+                input = connection.getInputStream();
+                output = new FileOutputStream(Environment.getExternalStorageDirectory().getPath()+"/"+DOWNLOAD_FILENAME);
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            } finally {
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+
+            Log.e(TAG, "Finished Download!!!");
+            return true;
+        }
+    }
+
 
     //
     // Redraw view
@@ -442,30 +630,30 @@ public class MainActivity extends Activity implements View.OnClickListener {
         // Load last ten seconds of samples from database
         private ArrayList<AccSensService.AccSensData> readfromTable() {
             // Read the prior ten second data
-            final int PREV_10_SECS = 10;
-            long now = System.currentTimeMillis();
-            final long startingTS = now - PREV_10_SECS * 1000;
+            sddb.beginTransaction();
             Cursor cursor =  sddb.query(
                     mTableNameCurrentOpen,
                     new String[]{SDSQLiteHelper.SDSQLiteSchema.X_FIELD,
                             SDSQLiteHelper.SDSQLiteSchema.Y_FIELD,
                             SDSQLiteHelper.SDSQLiteSchema.Z_FIELD,
                             SDSQLiteHelper.SDSQLiteSchema.TS_FIELD},
-                    SDSQLiteHelper.SDSQLiteSchema.TS_FIELD + " >= ?",
-                    new String[]{String.valueOf(startingTS)},
                     null,
                     null,
-                    SDSQLiteHelper.SDSQLiteSchema.TS_FIELD + " ASC"
+                    null,
+                    null,
+                    SDSQLiteHelper.SDSQLiteSchema.TS_FIELD + " DESC", // Order by timestamps (take most recent first (descending))
+                    "10" // Limit last 10 seconds
             );
+            sddb.setTransactionSuccessful();
+            sddb.endTransaction();
 
             if(cursor == null) return new ArrayList<>(0);
 
-            final int INIT_CAPACITY = PREV_10_SECS + 5;
-            ArrayList<AccSensService.AccSensData> dataRecord = new ArrayList<>(INIT_CAPACITY);
+            ArrayList<AccSensService.AccSensData> dataRecord = new ArrayList<>(0);
             if(cursor.moveToFirst()){
                 do{
                     AccSensService.AccSensData data = translateRecord(cursor);
-                    dataRecord.add(data);
+                    dataRecord.add(0, data);
                 }while (cursor.moveToNext());
             }
             cursor.close();

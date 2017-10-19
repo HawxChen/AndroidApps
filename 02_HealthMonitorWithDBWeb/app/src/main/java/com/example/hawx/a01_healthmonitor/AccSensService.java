@@ -103,7 +103,10 @@ public class AccSensService extends Service implements SensorEventListener {
             cv.put(SDSQLiteHelper.SDSQLiteSchema.X_FIELD, accData.x);
             cv.put(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD, accData.y);
             cv.put(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD, accData.z);
+            mSDDB.beginTransaction();
             mSDDB.insert(mTBName, null, cv);
+            mSDDB.setTransactionSuccessful();
+            mSDDB.endTransaction();
             return null;
         }
 
