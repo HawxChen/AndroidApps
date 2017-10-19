@@ -90,7 +90,7 @@ public class GraphView extends View {
         }
         int hors = horlabels.length - 1;
         for (int i = 0; i < horlabels.length; i++) {
-            paint.setColor(Color.GRAY);
+            paint.setColor(Color.DKGRAY);
             float x = ((graphwidth / hors) * i) + horstart;
             canvas.drawLine(x, height - border, x, border, paint);
             paint.setTextAlign(Align.CENTER);
