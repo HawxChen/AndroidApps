@@ -30,13 +30,14 @@ public class SDSQLiteHelper {
     {
 
         File   DB_FILE      = Environment.getExternalStorageDirectory();
-        String DB_FILE_PATH = DB_FILE.getAbsolutePath();
-        db_path = DB_FILE_PATH  + File.separator + DB_NAME;
+        String DB_FILE_PATH = DB_FILE.getAbsolutePath() + File.separator + "CSE535_ASSIGNMENT2";
+        db_path = DB_FILE_PATH + File.separator + DB_NAME;
 
         try
         {
             // Open the database (create if it does not exist)
             Log.e(TAG,"DB Path: " + db_path);
+            new File(DB_FILE_PATH).mkdirs(); // Make sure parent directories exist!
             db = SQLiteDatabase.openOrCreateDatabase(db_path, null);
             Log.e(TAG, "Successful DB: " + db.toString());
         }

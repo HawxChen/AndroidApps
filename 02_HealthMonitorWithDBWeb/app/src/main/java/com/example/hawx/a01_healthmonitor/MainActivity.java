@@ -460,6 +460,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
             // Re-load database to draw it
             sddbhelper = new SDSQLiteHelper();
+            buildConcatTableName();
+            sddbhelper.createTables(mConcatName);
+            mTableNameCurrentOpen = "\"" + mConcatName + "\"";
             sddb = sddbhelper.getWritableDatabase(mConcatName);
 
             // Draw it once (per assignment spec)
