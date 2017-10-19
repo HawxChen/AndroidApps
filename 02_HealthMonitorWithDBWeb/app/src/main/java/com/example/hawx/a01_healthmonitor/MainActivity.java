@@ -482,7 +482,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
 
         //Handle SSL and HTTP connection
-        private HttpsURLConnection returnHttpSSLConn () throws Exception {
+        private HttpURLConnection returnHttpSSLConn () throws Exception {
             // How to use SSL and X509TrustManager
             //Reference: https://www.programcreek.com/java-api-examples/javax.net.ssl.X509TrustManager
             //Reference: http://pankajmalhotra.com/Skip-SSL-HostName-Verification-Java-HttpsURLConnection
@@ -502,13 +502,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     return new X509Certificate[0]; }}}, new SecureRandom());
 
             HttpsURLConnection.setDefaultSSLSocketFactory(sslctxt.getSocketFactory());
-            return (HttpsURLConnection) new URL(DOWN_URL).openConnection();
+            return (HttpURLConnection) new URL(DOWN_URL).openConnection();
         }
 
         private Boolean doDownloadDB() throws Exception {
             InputStream input = null;
             FileOutputStream output = null;
-            HttpsURLConnection connection = null;
+            HttpURLConnection connection = null;
             Log.d(TAG, "doDownloadDB");
 
             try {
