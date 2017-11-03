@@ -1,0 +1,6 @@
+ant:
+<ant>
+  <mkdir dir="C:\Users\aagraw25\Documents\MATLAB\Comparator\for_redistribution" />
+  <mkdir dir="C:\Users\aagraw25\Documents\MATLAB\Comparator\for_testing" />
+</ant>
+mcc -W 'java:Comparator,Class1' -T link:lib -d C:\Users\aagraw25\Documents\MATLAB\Comparator\for_testing -v C:\Users\aagraw25\workspace\MatlabConnection\MatlabConnection\FeatureExt.m class{Class1:C:\Users\aagraw25\workspace\MatlabConnection\MatlabConnection\FeatureExt.m} 

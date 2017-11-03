@@ -1,0 +1,7 @@
+Matlab has a feature for converting *.m files to *.jar files. This helps to run codes written in Matlab in a Java program. The available folders:
+
+1- NeuroMovieClient: collects raw data from EEG sensor.
+2- FeatureExt: extracts features from collected raw data.
+3- Comparator: compares two signals to check if they belong to the same subject.
+
+Note: these are sample codes to help students develop thier own application.
