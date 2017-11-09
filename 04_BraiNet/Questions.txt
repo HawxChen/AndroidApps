@@ -1,1 +1,0 @@
-1. Based on the phase4: "Obtain real EEG data from IMPACT Lab and run your end to end system", Should we write the receiver program to receive the EEG equipement's data wirelessly or we just need to download the data file from the Lab's computer, which is responsible to collect data.

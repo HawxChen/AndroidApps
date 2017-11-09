@@ -21,10 +21,11 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.util.Log;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -71,12 +72,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
     //private static final String DOWN_URL = "https://192.168.0.17/CSE535Fall17Folder/Group25.db";
     private static final String DOWNLOAD_FILENAME = "CSE535_ASSIGNMENT2_Extra";
     private boolean isUploading = false;
+    private boolean startFirstTime = true;
 
     //
     // onCreate
     //
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -94,12 +97,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mUptV = new float[NUM_RECORD_MAX];
         String[] horizmark = new String[]{"-10", "-9", "-8", "-7", "-6","-5","-4", "-3", "-2", "-1", "0"};
         String[] vertimark = new String[]{"10", "0", "-10"};
-        mGview = new GraphView(this, mUptV, "Group 25's HealthMonitor", horizmark, vertimark, true);
+        mGview = new GraphView(this, mUptV, "Group 25's BrainNet", horizmark, vertimark, true);
         fLayout.addView(mGview);
 
         SDSQLiteHelper.deleteDB();
         sddbhelper = new SDSQLiteHelper();
         //sddbhelper.createTables(buildConcatTableName());
+
+        if(startFirstTime) {
+            startFirstTime = false;
+            startActivity(new Intent(MainActivity.this, Stimulus.class));
+        }
     }
 
     //
@@ -146,6 +154,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
     // Run button handler
     //
     private void onRunBtn() {
+
+        /*
         Log.d(TAG, "onRunBtn");
 
         if (mRunning) {
@@ -171,6 +181,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mJob = new HMonitorRunnable();
         mRunning = true;
         mHandler.post(mJob);
+        */
     }
 
     //
