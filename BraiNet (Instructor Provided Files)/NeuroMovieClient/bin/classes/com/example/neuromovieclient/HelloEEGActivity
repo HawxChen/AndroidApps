@@ -1,0 +1,230 @@
+package com.example.b2bemitter;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Random;
+
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.neurosky.thinkgear.TGDevice;
+import com.neurosky.thinkgear.TGEegPower;
+
+public class HelloEEGActivity extends Activity {
+    
+    private static final String TAG = "HelloEEG";
+
+    BluetoothAdapter            bluetoothAdapter;
+    TGDevice                    device;
+
+    final boolean               rawEnabled = true;
+
+    ScrollView                  sv;
+    TextView                    tv;
+    Button                      b;
+    
+    MarkovModel mm = new MarkovModel();
+    
+    private Socket socket;
+    private static final int SERVERPORT = 6000;
+    private static final String SERVER_IP = "10.144.143.220";
+    PrintWriter out;
+     
+    @Override
+    public void onCreate( Bundle savedInstanceState ) {
+        super.onCreate( savedInstanceState );
+        setContentView( R.layout.activity_main );
+        
+        sv = (ScrollView)findViewById( R.id.scrollView1 );
+        tv = (TextView)findViewById( R.id.textView1 );
+        tv.setText( "" );
+        tv.append( "Android version: " + Integer.valueOf(android.os.Build.VERSION.SDK) + "\n" );
+        	            
+        // Check if Bluetooth is available on the Android device
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if( bluetoothAdapter == null ) {            
+
+        	// Alert user that Bluetooth is not available
+        	Toast.makeText( this, "Bluetooth not available", Toast.LENGTH_LONG ).show();
+        	//finish();
+        	return;
+
+        } else {
+            
+        	// create the TGDevice 	
+        	device = new TGDevice(bluetoothAdapter, handler);
+        } 
+
+        tv.append("NeuroSky: " + TGDevice.version + " " + TGDevice.build_title);
+        tv.append("\n" );
+        
+        new Thread(new ClientThread()).start();
+   
+    } 
+	/* end onCreate() */
+    
+    
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // If BT is not on, request that it be enabled.
+        //if (!bluetoothAdapter.isEnabled()) {
+          //  Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            //startActivityForResult(enableIntent, 1);
+        //}
+    }
+
+    @Override
+    public void onPause() {
+    	// device.close();
+        super.onPause();
+    }
+    
+    @Override
+    public void onStop() {
+        device.close();
+        super.onStop();
+    }
+    
+    @Override
+    public void onDestroy() {
+    	//device.close();
+        super.onDestroy();
+    }
+       
+    /**
+     * Handles messages from TGDevice
+     */
+    final Handler handler = new Handler() {  	  	
+        @Override
+        public void handleMessage( Message msg ) {
+
+            switch( msg.what ) {
+                case TGDevice.MSG_STATE_CHANGE:
+    
+                    switch( msg.arg1 ) {
+    	                case TGDevice.STATE_IDLE:
+    	                    break;
+    	                case TGDevice.STATE_CONNECTING:       	
+    	                	tv.append( "Connecting...\n" );
+    	                	break;	
+                        case TGDevice.STATE_CONNECTED:
+                            tv.append( "Connected.\n" );
+                            device.start();                                                     
+                            break;
+    	                case TGDevice.STATE_NOT_FOUND:
+    	                	tv.append( "Could not connect any of the paired BT devices.  Turn them on and try again.\n" );
+    	                	break;
+                        case TGDevice.STATE_ERR_NO_DEVICE:
+                            tv.append( "No Bluetooth devices paired.  Pair your device and try again.\n" );
+                            break;
+    	                case TGDevice.STATE_ERR_BT_OFF:
+    	                    tv.append( "Bluetooth is off.  Turn on Bluetooth and try again." );
+    	                    break;
+    	                case TGDevice.STATE_DISCONNECTED:
+    	                	tv.append( "Disconnected.\n" );
+                    } /* end switch on msg.arg1 */
+
+                    break;
+                                       
+                case TGDevice.MSG_EEG_POWER:
+                	TGEegPower ep = (TGEegPower)msg.obj;
+                	Log.v( "HelloEEG", "Alpha: " + ep.lowAlpha );
+                	
+                	double alpha = ep.lowAlpha + ep.highAlpha;
+                	
+                	if (alpha != 0) {
+                	               	
+                	if (mm.ComputeProbability(alpha) == 0) {
+                		tv.append(alpha + " , " + 0 + "\n");
+                		out.println(0);
+                		
+                	} else if (mm.ComputeProbability(alpha) == 1){
+                		tv.append(alpha + " , " + 1 + "\n");
+                		out.println(1);
+                		              		
+                	} else {
+                		tv.append( "Processing...\n");	
+                	}
+                }
+                	
+                	break;    
+                                                
+                default:
+                	break;
+                	
+        	} /* end switch on msg.what */
+            
+        	sv.fullScroll( View.FOCUS_DOWN );
+        	
+        } /* end handleMessage() */
+        
+    }; /* end Handler */
+    
+    /**
+     * This method is called when the user clicks on the "Connect" button.
+     * 
+     * @param view
+     */
+    public void doStuff(View view) {
+    	if( device.getState() != TGDevice.STATE_CONNECTING && device.getState() != TGDevice.STATE_CONNECTED ) {
+    	    
+    		device.connect( rawEnabled );
+    		
+    		try {
+            	
+            	out = new PrintWriter(new BufferedWriter(
+                        new OutputStreamWriter(socket.getOutputStream())),
+                        true);
+                            	        	        	
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    		   		
+    	}
+    	
+    } /* end doStuff() */
+    
+    class ClientThread implements Runnable {
+    	 
+        @Override
+        public void run() {
+ 
+            try {
+                InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+ 
+                socket = new Socket(serverAddr, SERVERPORT);
+                 
+            } catch (UnknownHostException e1) {
+                e1.printStackTrace();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            
+ 
+        }       
+    }
+    
+} /* end HelloEEGActivity() */

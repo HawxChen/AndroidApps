@@ -1,0 +1,100 @@
+ant:
+<ant>
+  <mkdir dir="C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_redistribution" />
+  <mkdir dir="C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing" />
+</ant>
+mcc -W 'java:FeatureExt,Class1' -T link:lib -d C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing -v C:\Users\aagraw25\workspace\MatlabConnection\MatlabConnection\FeatureExt.m class{Class1:C:\Users\aagraw25\workspace\MatlabConnection\MatlabConnection\FeatureExt.m} 
+Compiler version: 5.1 (R2014a)
+Dependency analysis by REQUIREMENTS.
+[Warning: Adding path
+"C:\Users\aagraw25\workspace\MatlabConnection\MatlabConnection" to Compiler
+path instance.] 
+Parsing file "C:\Users\aagraw25\workspace\MatlabConnection\MatlabConnection\FeatureExt.m"
+	(Referenced from: "Compiler Command Line").
+Parsing file "C:\Program Files\MATLAB\R2014a\toolbox\compiler\deploy\deployprint.m"
+	(Referenced from: "Compiler Command Line").
+Parsing file "C:\Program Files\MATLAB\R2014a\toolbox\compiler\deploy\printdlg.m"
+	(Referenced from: "Compiler Command Line").
+Deleting 0 temporary MEX authorization files.
+Generating file "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\readme.txt".
+[parsing started RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\Class1.java]]
+[parsing completed 11ms]
+[parsing started RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\FeatureExtMCRFactory.java]]
+[parsing completed 1ms]
+[parsing started RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\Class1Remote.java]]
+[parsing completed 0ms]
+[parsing started RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\package-info.java]]
+[parsing completed 0ms]
+[search path for source files: C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar]
+[search path for class files: C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\resources.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\rt.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\sunrsasign.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\jsse.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\jce.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\charsets.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\jfr.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\classes,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\access-bridge-32.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\dnsns.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\jaccess.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\localedata.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\sunec.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\sunjce_provider.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\sunmscapi.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\sunpkcs11.jar,C:\Program Files (x86)\Java\jdk1.7.0_79\jre\lib\ext\zipfs.jar,C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/internal/MWComponentInstance.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/Disposable.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/Object.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/Set.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/internal/MWFunctionSignature.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/internal/MWMCR.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/MWException.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/String.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/MWComponentOptions.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/List.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/pooling/Poolable.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/rmi/Remote.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/rmi/RemoteException.class)]]
+[checking FeatureExt.Class1]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/Throwable.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/AutoCloseable.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/HashSet.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/Collection.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/AbstractSet.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/AbstractCollection.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/Iterable.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/Exception.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/Class.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/MWCtfExtractLocation.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/io/File.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/MWCtfDirectorySource.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/MWCtfSource.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/Arrays.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/Error.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/lang/RuntimeException.class)]]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/util/Iterator.class)]]
+[wrote RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\classes\FeatureExt\Class1.class]]
+[checking FeatureExt.FeatureExtMCRFactory]
+[loading ZipFileIndexFileObject[C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar(com/mathworks/toolbox/javabuilder/MWCtfClassLoaderSource.class)]]
+[wrote RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\classes\FeatureExt\FeatureExtMCRFactory.class]]
+[checking FeatureExt.Class1Remote]
+[loading ZipFileIndexFileObject[C:\Program Files (x86)\Java\jdk1.7.0_79\lib\ct.sym(META-INF/sym/rt.jar/java/io/IOException.class)]]
+[wrote RegularFileObject[C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\classes\FeatureExt\Class1Remote.class]]
+[total 126ms]
+Executing command: "javac -verbose -classpath "C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar" -d "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\classes" "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\Class1.java" "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\FeatureExtMCRFactory.java" "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\Class1Remote.java" "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt\package-info.java""Executing command: "jar -vcf "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\FeatureExt.jar" -C "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\classes" ."added manifest
+adding: FeatureExt/(in = 0) (out= 0)(stored 0%)
+adding: FeatureExt/Class1.class(in = 3878) (out= 1626)(deflated 58%)
+adding: FeatureExt/Class1Remote.class(in = 326) (out= 227)(deflated 30%)
+adding: FeatureExt/FeatureExt.ctf(in = 54915) (out= 40720)(deflated 25%)
+adding: FeatureExt/FeatureExtMCRFactory.class(in = 1816) (out= 772)(deflated 57%)
+Executing command: ""javadoc" -d "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html" -sourcepath "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing" -classpath "C:\Program Files\MATLAB\R2014a\toolbox\javabuilder\jar\javabuilder.jar" FeatureExt"Creating destination directory: "C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\"
+Loading source files for package FeatureExt...
+Constructing Javadoc information...
+Standard Doclet version 1.7.0_79
+Building tree for all the packages and classes...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\FeatureExt\Class1.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\FeatureExt\Class1Remote.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\FeatureExt\FeatureExtMCRFactory.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\FeatureExt\package-frame.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\FeatureExt\package-summary.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\FeatureExt\package-tree.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\constant-values.html...
+Building index for all the packages and classes...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\overview-tree.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\index-all.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\deprecated-list.html...
+Building index for all classes...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\allclasses-frame.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\allclasses-noframe.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\index.html...
+Generating C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc\html\help-doc.html...
+Packaging...
+Creating the bundle...
+Web based installer created at C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_redistribution\MyAppInstaller_web.exe.
+Packaging complete.
+Source 'C:\Users\aagraw25\Documents\MATLAB\FeatureExt\for_testing\doc' exists but is a directory
