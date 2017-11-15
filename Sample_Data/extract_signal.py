@@ -28,5 +28,7 @@ print 'Extracting signal #%d (%s)' % (args.signal, signal_labels[args.signal-1])
 #     sigbufs[i, :] = f.readSignal(i)
 #     print sigbufs[i, :]
 
+out = open('out.txt', 'wb')
 for s in f.readSignal(args.signal-1):
-	print s
+	out.write('%s\n' % s)
+

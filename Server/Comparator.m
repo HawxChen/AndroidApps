@@ -13,7 +13,7 @@ end
 
 NBC_input = [signature_data;signal_data];
 
-O1 = fitNaiveBayes(NBC_input,labels);
+O1 = fitcnb(NBC_input,labels);
 C1 = O1.predict(NBC_input);
 cMat = confusionmat(labels,C1)
 

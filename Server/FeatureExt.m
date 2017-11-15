@@ -1,8 +1,8 @@
 function out = FeatureExt(signal)
 % in seconds
-signal_len = 120;
+signal_len = 60;
 % sample rate in HZ
-SR = 512;
+SR = 160;
 
 out = zeros(signal_len*6,1);
 S_FFT = zeros(SR,1);
