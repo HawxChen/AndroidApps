@@ -56,3 +56,18 @@ as described above, be sure to active the environment first.
 You can now navigate to [http://127.0.0.1:8080](http://127.0.0.1:8080) to test the system.
 
 Note that the administration interface is not guarded by any means of authentication, so anyone with access to the system via the network could potentially use the administration interface.
+
+Screenshots
+-----------
+
+The admin interface is pictured below. Each user in the system is listed. Users can be deleted by clicking the "Delete User" link.
+
+![Admin Interface](screenshot_admin_1.png)
+
+Users can be created from the admin page by scrolling to the bottom and entering the user information in the form.
+
+![Admin Interface](screenshot_admin_2.png)
+
+Users can login from the web by going to the login page, pictured below.
+
+![Login Interface](screenshot_login.png)
