@@ -62,16 +62,16 @@ Screenshots
 
 By navigating to the above link, you will be greeted with the index page, which has links to the admin and login interface.
 
-![Index](screenshot_index.png)
+![Index](./screenshots/screenshot_index.png)
 
 The admin interface is pictured below. Each user in the system is listed. Users can be deleted by clicking the "Delete User" link.
 
-![Admin Interface](screenshot_admin_1.png)
+![Admin Interface](./screenshots/screenshot_admin_1.png)
 
 Users can be created from the admin page by scrolling to the bottom and entering the user information in the form.
 
-![Admin Interface](screenshot_admin_2.png)
+![Admin Interface]./(screenshots/screenshot_admin_2.png)
 
 Users can login from the web by going to the login page, pictured below.
 
-![Login Interface](screenshot_login.png)
+![Login Interface](./screenshots/screenshot_login.png)
