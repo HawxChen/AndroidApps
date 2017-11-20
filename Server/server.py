@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from bottle import route, run, template, request, static_file
+from bottle import route, run, template, request, static_file, HTTPResponse
 import matlab
 import matlab.engine
 import sqlite3
@@ -136,6 +136,8 @@ def login():
 
 @route('/login', method='POST')
 def login_post():
+
+    
     """Login POST handler"""
     # Get inputs from form data
     username = request.forms.get('username')
@@ -155,7 +157,10 @@ def login_post():
 
     # Compare the signatures
     result = compare_signatures(users[0].signature, signature)
-    return "Result is %s" % str(result)
+    if result == 0:
+        return HTTPResponse(status=401, body="Invalid Signature")
+    else:
+        return HTTPResponse(status=200, body="Success")
 
 #
 # Main Function (runs everything)
@@ -175,7 +180,7 @@ def main():
 
     # Start the webserver
     print 'Starting server...'
-    run(host='localhost', port=8080)
+    run(host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
     main()
