@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from bottle import route, run, template, request
+from bottle import route, run, template, request, static_file
 import matlab
 import matlab.engine
 import sqlite3
@@ -56,7 +56,7 @@ class Database(object):
         if _id is not None:
             query += "WHERE `id` = %d" % _id
         elif name is not None:
-            query += "WHERE `name` = '%s'" % name
+            query += "WHERE `name` = '%s' COLLATE NOCASE" % name
         users = []
         for uid, name, signature in self._c.execute(query):
             users.append(User(uid, name, pickle.loads(signature)))
@@ -68,15 +68,31 @@ class Database(object):
             INSERT INTO `users` (`name`, `signature`) VALUES (?, ?) \
             '''
         vals = (user.name, pickle.dumps(user.signature))
-        print vals
         self._c.execute(query, vals)
         self._conn.commit()
         user.id = self._c.lastrowid
         return user
 
+    def remove_user(self, user):
+        query = '''\
+            DELETE FROM `users` WHERE `id` = ? \
+            '''
+        self._c.execute(query, (user.id,))
+        self._conn.commit()
+        return user
+
 #
 # WEB INTERFACE
 #
+
+@route('/static/<filename>')
+def server_static(filename):
+    return static_file(filename, root='static')
+
+@route('/', method='GET')
+def index():
+    """Index page"""
+    return template('index')
 
 @route('/admin')
 def admin():
@@ -106,7 +122,12 @@ def admin_create():
 @route('/admin/delete')
 def admin_delete():
     """Delete a user"""
-    return "FIXME"
+    uid = int(request.query['id'])
+    users = db.get_users(_id=uid)
+    if len(users) < 1:
+        return "User does not exist"
+    db.remove_user(users[0])
+    return "OK"
 
 @route('/login', method='GET')
 def login():
