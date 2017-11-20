@@ -171,6 +171,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
             // mUptV = new float[0];
             return;
         }
+        svm_train train = new svm_train();
+        svm_scale scale = new svm_scale();
 
         buildConcatTableName();
 
