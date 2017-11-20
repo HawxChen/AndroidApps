@@ -92,12 +92,12 @@ def server_static(filename):
 @route('/', method='GET')
 def index():
     """Index page"""
-    return template('index')
+    return template('templates/index')
 
 @route('/admin')
 def admin():
     """Admin page"""
-    return template('admin', users=db.get_users())
+    return template('templates/admin', users=db.get_users())
 
 @route('/admin/create', method='POST')
 def admin_create():
@@ -132,7 +132,7 @@ def admin_delete():
 @route('/login', method='GET')
 def login():
     """Login page"""
-    return template('login')
+    return template('templates/login')
 
 @route('/login', method='POST')
 def login_post():
