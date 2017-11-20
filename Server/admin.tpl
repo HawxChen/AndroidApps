@@ -31,7 +31,7 @@
 	</tr>
 	<tr>
 		<th>Signal Data File</th>
-		<td><input type="file" name="signal_upload" /></td>
+		<td><input type="file" name="signal" /></td>
 	</tr>
 	<tr>
 		<td colspan="2"><input type="submit" name="Create User"></td>
