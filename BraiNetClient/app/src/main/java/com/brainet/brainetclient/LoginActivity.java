@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 
 import android.os.AsyncTask;
@@ -23,6 +24,21 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * A login screen that offers login via email/password.
@@ -39,6 +55,8 @@ public class LoginActivity extends AppCompatActivity {
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
+
+    private String TAG = "LoginActivity";
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -198,6 +216,7 @@ public class LoginActivity extends AppCompatActivity {
             mPassword = password;
         }
 
+        /*
         @Override
         protected Boolean doInBackground(Void... params) {
             // TODO: attempt authentication against a network service.
@@ -205,7 +224,6 @@ public class LoginActivity extends AppCompatActivity {
             try {
                 // Simulate network access.
                 Thread.sleep(2000);
-
             } catch (InterruptedException e) {
                 return false;
             }
@@ -221,6 +239,7 @@ public class LoginActivity extends AppCompatActivity {
             // TODO: register the new account here.
             return true;
         }
+        */
 
         @Override
         protected void onPostExecute(final Boolean success) {
@@ -233,6 +252,12 @@ public class LoginActivity extends AppCompatActivity {
 //                mPasswordView.setError(getString(R.string.error_incorrect_password));
 //                mPasswordView.requestFocus();
             }
+
+            if (success) {
+                Toast.makeText(getApplicationContext(), "Upload successful!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_SHORT).show();
+            }
         }
 
         @Override
@@ -240,6 +265,134 @@ public class LoginActivity extends AppCompatActivity {
             mAuthTask = null;
             showProgress(false);
         }
+
+
+
+
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+
+            boolean result = false;
+            try {
+                result =doUploadDB();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return result;
+        }
+
+        //Handle SSL and HTTP connection
+        private HttpURLConnection returnHttpSSLConn () throws Exception {
+            // How to use SSL and X509TrustManager
+            //Reference: https://www.programcreek.com/java-api-examples/javax.net.ssl.X509TrustManager
+            //Reference: http://pankajmalhotra.com/Skip-SSL-HostName-Verification-Java-HttpsURLConnection
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier(){
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }});
+
+            SSLContext sslctxt = null;
+            sslctxt = SSLContext.getInstance("TLS");
+            //Reference: http://www.javased.com/index.php?api=java.security.cert.X509Certificate
+            //Reference: Follow the naming of parameters
+            sslctxt.init(null,  new X509TrustManager[]{new X509TrustManager(){
+                public void checkClientTrusted(X509Certificate[] chain, String authType)  {}
+                public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0]; }}}, new SecureRandom());
+
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslctxt.getSocketFactory());
+
+            String UP_URL = "http://192.168.0.17:8080/login";
+
+            return (HttpURLConnection) new URL(UP_URL).openConnection();
+        }
+
+        private boolean doUploadDB() throws Exception {
+            final String mark_boundary = "XXXXXXXXXXXXX";
+            HttpURLConnection conn = returnHttpSSLConn();
+
+            Log.d(TAG, "doUploadDb()");
+
+            final int connectTimeout = 5000;
+            final int readTimeout = 50000;
+            conn.setConnectTimeout(connectTimeout);
+            conn.setReadTimeout(readTimeout);
+            conn.setUseCaches(false);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Connection", "Keep-Alive");
+            conn.setRequestProperty("Cache-Control", "no-cache");
+            //boundary usage: https://stackoverflow.com/questions/11766878/sending-files-using-post-with-httpurlconnection
+            conn.setRequestProperty(
+                    "Content-Type", "multipart/form-data;boundary=" + mark_boundary);
+
+            DataOutputStream httpPacket = new DataOutputStream(conn.getOutputStream());
+
+            /*
+
+------WebKitFormBoundaryQAN2O0TwVBTFDVBc
+Content-Disposition: form-data; name="username"
+
+Matt
+------WebKitFormBoundaryQAN2O0TwVBTFDVBc
+Content-Disposition: form-data; name="signal"; filename="S001R03_22.txt"
+Content-Type: text/plain
+
+
+------WebKitFormBoundaryQAN2O0TwVBTFDVBc
+Content-Disposition: form-data; name="Login"
+
+Submit
+------WebKitFormBoundaryQAN2O0TwVBTFDVBc--
+
+             */
+
+            //
+            // Write request payload
+            //
+
+            // Write Username
+            httpPacket.writeBytes("--" + mark_boundary + "\r\n");
+            httpPacket.writeBytes("Content-Disposition: form-data; name=\"username\"\r\n\r\n");
+            httpPacket.writeBytes("Matt\r\n");
+
+            // Write Submit
+            httpPacket.writeBytes("--" + mark_boundary + "\r\n");
+            httpPacket.writeBytes("Content-Disposition: form-data; name=\"Login\"\r\n\r\n");
+            httpPacket.writeBytes("Submit\r\n");
+
+            httpPacket.writeBytes("--" + mark_boundary + "\r\n");
+            httpPacket.writeBytes("Content-Disposition: form-data; name=\"signal\"; filename=\"signal.txt\"\r\n\r\n");
+
+            // Write data
+            String file_path = Environment.getExternalStorageDirectory() + File.separator + "S001R03_22.txt";
+
+            FileInputStream db_file = new FileInputStream(file_path);
+            byte[] output_buf = new byte[4096];
+            int cnt = 0;
+            while((cnt = db_file.read(output_buf)) > 0){
+                httpPacket.write(output_buf, 0, cnt);
+            }
+
+            // Write Endings
+            httpPacket.writeBytes("\r\n--" + mark_boundary + "--\r\n");;
+
+            // Flush and close the connection
+            httpPacket.flush();
+            httpPacket.close();
+            final int status = conn.getResponseCode();
+            if (status != HttpURLConnection.HTTP_OK) {
+                Log.e("uploadDb", "Failed with http status: " + status);
+                return false;
+            }
+
+            Log.e(TAG, "Finish Upload!!!");
+            return true;
+        }
+
     }
 }
 
