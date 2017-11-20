@@ -21,7 +21,7 @@ def create_signature_from_signal_file(path):
 def compare_signatures(sig1, sig2):
     # Compare two signatures
     # training_size = len(features) - 6
-    training_size = len(sig1) / 6
+    training_size = len(sig1) / 12
     x = eng.Comparator(sig1, sig2, training_size)
     print 'Comparator returned', x
     return x
@@ -154,7 +154,7 @@ def login_post():
         return "User does not exist"
 
     # Compare the signatures
-    result = compare_signatures(signature, users[0].signature)
+    result = compare_signatures(users[0].signature, signature)
     return "Result is %s" % str(result)
 
 #

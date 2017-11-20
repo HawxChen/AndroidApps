@@ -1,6 +1,6 @@
 function out = FeatureExt(signal)
 % in seconds
-signal_len = 60;
+signal_len = 120;
 % sample rate in HZ
 SR = 160;
 
