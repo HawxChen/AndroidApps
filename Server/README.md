@@ -60,6 +60,10 @@ Note that the administration interface is not guarded by any means of authentica
 Screenshots
 -----------
 
+By navigating to the above link, you will be greeted with the index page, which has links to the admin and login interface.
+
+![Index](screenshot_index.png)
+
 The admin interface is pictured below. Each user in the system is listed. Users can be deleted by clicking the "Delete User" link.
 
 ![Admin Interface](screenshot_admin_1.png)
