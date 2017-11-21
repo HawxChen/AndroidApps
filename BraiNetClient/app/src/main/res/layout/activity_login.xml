@@ -50,11 +50,11 @@
                 android:layout_height="wrap_content">
 
                 <Button
-                    android:id="@+id/get_signal_data_button"
+                    android:id="@+id/signal_acquisition_button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Start Signal Sampling" />
+                    android:text="Begin Signal Acquisiton" />
             </android.support.design.widget.TextInputLayout>
 
             <Button

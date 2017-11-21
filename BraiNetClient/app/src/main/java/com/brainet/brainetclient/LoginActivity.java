@@ -100,6 +100,7 @@ public class LoginActivity extends AppCompatActivity {
 //            }
 //        });
 
+        // Set up Sign-In Button Handler
         Button mSignInButton = (Button) findViewById(R.id.sign_in_button);
         mSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -108,8 +109,22 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        // Set up Signal Acquisition Handler
+        Button mSignalAcquisitionButton = (Button) findViewById(R.id.signal_acquisition_button);
+        mSignalAcquisitionButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                acquireSignal();
+            }
+        });
+
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+    }
+
+    private void acquireSignal() {
+        Intent intent = new Intent(getBaseContext(), SignalAcquisition.class);
+        startActivity(intent);
     }
 
     /**
