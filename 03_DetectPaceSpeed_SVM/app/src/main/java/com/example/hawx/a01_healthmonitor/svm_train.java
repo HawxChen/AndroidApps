@@ -5,6 +5,7 @@ package com.example.hawx.a01_healthmonitor;
 // (powered by Fernflower decompiler)
 //
 
+import android.util.Log;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -24,8 +25,10 @@ class svm_train {
     private String input_file_name;
     private String model_file_name;
     private String error_msg;
-    private int cross_validation;
-    private int nr_fold;
+    public int cross_validation = 3;
+    public int nr_fold = 5;
+    private double accuracy = 0;
+    private static final String TAG = "SVM_TRAIN";
     private static svm_print_interface svm_print_null = new svm_print_interface() {
         public void print(String var1) {
         }
@@ -36,10 +39,12 @@ class svm_train {
 
     private static void exit_with_help() {
         System.out.print("Usage: svm_train [options] training_set_file [model_file]\noptions:\n-s svm_type : set type of SVM (default 0)\n\t0 -- C-SVC\t\t(multi-class classification)\n\t1 -- nu-SVC\t\t(multi-class classification)\n\t2 -- one-class SVM\n\t3 -- epsilon-SVR\t(regression)\n\t4 -- nu-SVR\t\t(regression)\n-t kernel_type : set type of kernel function (default 2)\n\t0 -- linear: u\'*v\n\t1 -- polynomial: (gamma*u\'*v + coef0)^degree\n\t2 -- radial basis function: exp(-gamma*|u-v|^2)\n\t3 -- sigmoid: tanh(gamma*u\'*v + coef0)\n\t4 -- precomputed kernel (kernel values in training_set_file)\n-d degree : set degree in kernel function (default 3)\n-g gamma : set gamma in kernel function (default 1/num_features)\n-r coef0 : set coef0 in kernel function (default 0)\n-c cost : set the parameter C of C-SVC, epsilon-SVR, and nu-SVR (default 1)\n-n nu : set the parameter nu of nu-SVC, one-class SVM, and nu-SVR (default 0.5)\n-p epsilon : set the epsilon in loss function of epsilon-SVR (default 0.1)\n-m cachesize : set cache memory size in MB (default 100)\n-e epsilon : set tolerance of termination criterion (default 0.001)\n-h shrinking : whether to use the shrinking heuristics, 0 or 1 (default 1)\n-b probability_estimates : whether to train a SVC or SVR model for probability estimates, 0 or 1 (default 0)\n-wi weight : set the parameter C of class i to weight*C, for C-SVC (default 1)\n-v n : n-fold cross validation mode\n-q : quiet mode (no outputs)\n");
+        Log.e(TAG, "Usage: svm_train [options] training_set_file [model_file]\noptions:\n-s svm_type : set type of SVM (default 0)\n\t0 -- C-SVC\t\t(multi-class classification)\n\t1 -- nu-SVC\t\t(multi-class classification)\n\t2 -- one-class SVM\n\t3 -- epsilon-SVR\t(regression)\n\t4 -- nu-SVR\t\t(regression)\n-t kernel_type : set type of kernel function (default 2)\n\t0 -- linear: u\'*v\n\t1 -- polynomial: (gamma*u\'*v + coef0)^degree\n\t2 -- radial basis function: exp(-gamma*|u-v|^2)\n\t3 -- sigmoid: tanh(gamma*u\'*v + coef0)\n\t4 -- precomputed kernel (kernel values in training_set_file)\n-d degree : set degree in kernel function (default 3)\n-g gamma : set gamma in kernel function (default 1/num_features)\n-r coef0 : set coef0 in kernel function (default 0)\n-c cost : set the parameter C of C-SVC, epsilon-SVR, and nu-SVR (default 1)\n-n nu : set the parameter nu of nu-SVC, one-class SVM, and nu-SVR (default 0.5)\n-p epsilon : set the epsilon in loss function of epsilon-SVR (default 0.1)\n-m cachesize : set cache memory size in MB (default 100)\n-e epsilon : set tolerance of termination criterion (default 0.001)\n-h shrinking : whether to use the shrinking heuristics, 0 or 1 (default 1)\n-b probability_estimates : whether to train a SVC or SVR model for probability estimates, 0 or 1 (default 0)\n-wi weight : set the parameter C of class i to weight*C, for C-SVC (default 1)\n-v n : n-fold cross validation mode\n-q : quiet mode (no outputs)\n");
         System.exit(1);
     }
 
     private void do_cross_validation() {
+        Log.e(TAG, "Enter do_cross_validation");
         int var2 = 0;
         double var3 = 0.0D;
         double var5 = 0.0D;
@@ -50,14 +55,19 @@ class svm_train {
         double[] var15 = new double[this.prob.l];
         svm.svm_cross_validation(this.prob, this.param, this.nr_fold, var15);
         int var1;
+        Log.e(TAG, "svm_typ: " + this.param.svm_type);
         if(this.param.svm_type != 3 && this.param.svm_type != 4) {
+            Log.e(TAG, "Generating accuracy....");
             for(var1 = 0; var1 < this.prob.l; ++var1) {
                 if(var15[var1] == this.prob.y[var1]) {
                     ++var2;
                 }
             }
+            this.accuracy = (100.0D * (double)var2 / (double)this.prob.l);
+            MainActivity.mainAccuracy = this.accuracy;
+            Log.e(TAG, "Cross Validation Accuracy = " + this.accuracy);
+            System.out.print("Cross Validation Accuracy = " + this.accuracy + "%\n");
 
-            System.out.print("Cross Validation Accuracy = " + 100.0D * (double)var2 / (double)this.prob.l + "%\n");
         } else {
             for(var1 = 0; var1 < this.prob.l; ++var1) {
                 double var16 = this.prob.y[var1];
@@ -82,12 +92,14 @@ class svm_train {
         this.error_msg = svm.svm_check_parameter(this.prob, this.param);
         if(this.error_msg != null) {
             System.err.print("ERROR: " + this.error_msg + "\n");
+            Log.e(TAG, "ERROR: " + this.error_msg + "\n");
             System.exit(1);
         }
 
         if(this.cross_validation != 0) {
             this.do_cross_validation();
         } else {
+            Log.e(TAG, "Do normal train without cross validation");
             this.model = svm.svm_train(this.prob, this.param);
             svm.svm_save_model(this.model_file_name, this.model);
         }
@@ -131,7 +143,6 @@ class svm_train {
         this.param.nr_weight = 0;
         this.param.weight_label = new int[0];
         this.param.weight = new double[0];
-        this.cross_validation = 0;
 
         int var2;
         for(var2 = 0; var2 < var1.length && var1[var2].charAt(0) == 45; ++var2) {
@@ -217,7 +228,6 @@ class svm_train {
         if(var2 >= var1.length) {
             exit_with_help();
         }
-
         this.input_file_name = var1[var2];
         if(var2 < var1.length - 1) {
             this.model_file_name = var1[var2 + 1];
@@ -226,6 +236,8 @@ class svm_train {
             ++var6;
             this.model_file_name = var1[var2].substring(var6) + ".model";
         }
+
+        Log.e(TAG, "input: " + this.input_file_name + "; output: " + this.model_file_name);
 
     }
 

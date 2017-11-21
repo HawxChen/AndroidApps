@@ -112,13 +112,13 @@
             android:text="Model's accuracy: " />
 
         <TextView
-            android:id="@+id/textView7"
+            android:id="@+id/validationView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TextView" />
 
         <TextView
-            android:id="@+id/textView8"
+            android:id="@+id/nr_foldview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TextView" />

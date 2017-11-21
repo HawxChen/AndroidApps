@@ -77,6 +77,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private Button bOffload;
     private Button bDraw3D;
     private Button bcleanTable;
+    private TextView nr_foldText;
+    private TextView cross_validationText;
     private TextView resulText;
     private AlertDialog recordDialog, analyzingDialog;
     private static final boolean OFFICIAL_RELEASE = false;
@@ -93,6 +95,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     private static boolean bSvm_trained = false;
     private CountDownTimer analyzingTimer;
+    private svm_train train_inst = new svm_train();
+    private svm_scale scale_inst = new svm_scale();
+    public static double mainAccuracy = 0;
 
 
 
@@ -118,6 +123,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         bcleanTable.setOnClickListener(this);
 
         resulText = findViewById(R.id.ResultText);
+        nr_foldText = findViewById(R.id.nr_foldview);
+        cross_validationText = findViewById(R.id.validationView);
 
         mNameInput = findViewById(R.id.nameText);
 
@@ -272,8 +279,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
             }
             public void onFinish(){
-                Log.e(TAG, "showAnalyziing -- Starting Analyzing! ");
-
+                Log.e(TAG, "showAnalyziing -- Stop Analyzing! ");
             }
         };
         analyzingTimer.start();
@@ -401,37 +407,39 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         }
 
-
-
         @Override
         protected Void doInBackground(Void... voids) {
             //Check if we have trained data first!
             Log.e(TAG, "AnalyzingTask: doInBackground!!!!! ");
-            if(true || !checkFileExist(svm_raw_training_file_name)) { //testing version
-            // if(!checkFileExist(svm_raw_training_file_name)) { //Official version
+            if (true || !checkFileExist(svm_raw_training_file_name)) { //testing version
+                // if(!checkFileExist(svm_raw_training_file_name)) { //Official version
                 //if not, just train it!
                 Log.e(TAG, "AnalyzingTask: Training!!!!! ");
                 duplicateRawDb(svm_dup_db_abs_path);
                 translateDBtoFile(svm_dup_db_abs_path, svm_raw_training_file_abs_path);
-                svm_train train_inst = new svm_train();
-                svm_scale scale_inst = new svm_scale();
+
                 String[] trainParam = {svm_raw_training_file_abs_path, svm_model_file_abs_path};
                 String[] scaleParam = {svm_raw_training_file_abs_path};
                 try {
                     scale_inst.main(scaleParam);
                     train_inst.main(trainParam);
+                    publishProgress();
                 } catch (java.io.IOException e) {
                     e.printStackTrace();
                 }
             }
-
-
-
-
-            analyzingDialog.dismiss();
-            analyzingTimer.cancel();
             return null;
         }
+
+        protected void onProgressUpdate(Void... voids) {
+            Log.e(TAG, "AnalyzingTask: onProgressUpdate");
+            resulText.setText(" Accuracy is: !!! " + Double.toString(mainAccuracy));
+            nr_foldText.setText("K-fold: " + train_inst.nr_fold);
+            cross_validationText.setText("Cross Validation: " + train_inst.cross_validation);
+            analyzingDialog.dismiss();
+            analyzingTimer.cancel();
+        }
+
     }
 
 
