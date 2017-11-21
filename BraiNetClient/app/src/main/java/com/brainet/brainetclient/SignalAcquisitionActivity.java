@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
-public class SignalAcquisition extends AppCompatActivity {
+public class SignalAcquisitionActivity extends AppCompatActivity {
     TextView timer_display;
     int seconds_remaining;
     Handler timer_handler = new Handler();
@@ -31,6 +31,4 @@ public class SignalAcquisition extends AppCompatActivity {
         timer_handler.postDelayed(timer_runnable, 0);
         seconds_remaining = 10;
     }
-
-
 }

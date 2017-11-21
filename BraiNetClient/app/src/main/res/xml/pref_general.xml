@@ -12,10 +12,6 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="Remote Server IP Address and Port" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:key="enable_fog_server"
-        android:title="Enable Use of Fog Server" />
     <EditTextPreference
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -24,5 +20,10 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="Fog Server IP Address and Port" />
+    <ListPreference
+        android:key="server_preference"
+        android:title="Server Preference"
+        android:entries="@array/server_select_list_entries"
+        android:entryValues="@array/server_select_list_values" />
 
 </PreferenceScreen>

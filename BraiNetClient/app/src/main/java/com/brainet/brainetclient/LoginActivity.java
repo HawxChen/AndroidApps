@@ -13,17 +13,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.DataOutputStream;
@@ -123,7 +120,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void acquireSignal() {
-        Intent intent = new Intent(getBaseContext(), SignalAcquisition.class);
+        Intent intent = new Intent(getBaseContext(), SignalAcquisitionActivity.class);
         startActivity(intent);
     }
 
