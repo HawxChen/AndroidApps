@@ -153,9 +153,9 @@ def login_post():
     # Find the user in the database
     users = db.get_users(name=username)
     if len(users) < 1:
-        return "User does not exist"
+        return HTTPResponse(status=401, body="User does not exist")
 
-    # Compare the signatures
+    # User found, compare the signatures
     result = compare_signatures(users[0].signature, signature)
     if result == 0:
         return HTTPResponse(status=401, body="Invalid Signature")

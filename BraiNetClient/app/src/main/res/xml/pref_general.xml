@@ -23,6 +23,7 @@
     <ListPreference
         android:key="server_preference"
         android:title="Server Preference"
+        android:defaultValue="0"
         android:entries="@array/server_select_list_entries"
         android:entryValues="@array/server_select_list_values" />
 

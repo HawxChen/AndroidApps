@@ -4,7 +4,9 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 
 import android.os.AsyncTask;
@@ -49,11 +51,15 @@ public class LoginActivity extends AppCompatActivity {
 
     // UI references.
     private AutoCompleteTextView mUsernameView;
+    private Button mSignalAcquisitionButton;
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
 
     private String TAG = "LoginActivity";
+
+    public final static int REQUEST_UPDATE_SETTINGS = 1;
+    public final static int REQUEST_SIGNAL_ACQUIRED = 2;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -68,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
             case R.id.action_settings:
                 // User chose the "Settings" item, show the app settings UI...
                 Intent intent = new Intent(getBaseContext(), SettingsActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, REQUEST_UPDATE_SETTINGS);
                 return true;
 
             default:
@@ -76,6 +82,30 @@ public class LoginActivity extends AppCompatActivity {
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
 
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode) {
+            case REQUEST_UPDATE_SETTINGS:
+                /* Settings were updated */
+                Log.d(TAG, "Settings updated:");
+
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+                String remote_server_addr = prefs.getString("remote_server_addr", "");
+                String fog_server_addr = prefs.getString("fog_server_addr", "");
+                String server_pref = prefs.getString("server_preference", "");
+
+                Log.d(TAG, String.format("Remote Server Addr: %s", remote_server_addr));
+                Log.d(TAG, String.format("Fog Server Addr: %s", fog_server_addr));
+                Log.d(TAG, String.format("Server Preference: %s", server_pref));
+                break;
+
+            case REQUEST_SIGNAL_ACQUIRED:
+                Log.d(TAG, "Signal acquisition finished!");
+                break;
         }
     }
 
@@ -107,7 +137,7 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         // Set up Signal Acquisition Handler
-        Button mSignalAcquisitionButton = (Button) findViewById(R.id.signal_acquisition_button);
+        mSignalAcquisitionButton = (Button) findViewById(R.id.signal_acquisition_button);
         mSignalAcquisitionButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -119,9 +149,13 @@ public class LoginActivity extends AppCompatActivity {
         mProgressView = findViewById(R.id.login_progress);
     }
 
+    /*
+     * Called when the "Start Signal Acquisition" button is pressed. Starts the Signal Acquistion
+     * activity to capture EEG signal.
+     */
     private void acquireSignal() {
         Intent intent = new Intent(getBaseContext(), SignalAcquisitionActivity.class);
-        startActivity(intent);
+        startActivityForResult(intent, REQUEST_SIGNAL_ACQUIRED);
     }
 
     /**
@@ -167,8 +201,11 @@ public class LoginActivity extends AppCompatActivity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-//            mAuthTask = new UserLoginTask(username, password);
-            mAuthTask = new UserLoginTask(username, "");
+
+            String serverUrl = "http://10.252.136.174:8080/login";
+            String signalFilePath = Environment.getExternalStorageDirectory() + File.separator + "S001R03_22.txt";
+
+            mAuthTask = new UserLoginTask(username, serverUrl, signalFilePath);
             mAuthTask.execute((Void) null);
         }
     }
@@ -221,54 +258,48 @@ public class LoginActivity extends AppCompatActivity {
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mUsername;
-        private final String mPassword;
+        private final String mServerUrl;
+        private final String mSignalFilePath;
 
-        UserLoginTask(String username, String password) {
+        /*
+         * Constructor
+         */
+        UserLoginTask(String username, String serverUrl, String signalFilePath) {
             mUsername = username;
-            mPassword = password;
+            mServerUrl = serverUrl;
+            mSignalFilePath = signalFilePath;
         }
 
         /*
+         * Main background task
+         */
         @Override
         protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
 
+            boolean result = false;
             try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
+                result = doLogin();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-//            for (String credential : DUMMY_CREDENTIALS) {
-//                String[] pieces = credential.split(":");
-//                if (pieces[0].equals(mUsername)) {
-//                    // Account exists, return true if the password matches.
-//                    return pieces[1].equals(mPassword);
-//                }
-//            }
-
-            // TODO: register the new account here.
-            return true;
+            return result;
         }
-        */
 
+        /*
+         * Login has finished (may not be successful)
+         */
         @Override
         protected void onPostExecute(final Boolean success) {
             mAuthTask = null;
             showProgress(false);
 
             if (success) {
+                Toast.makeText(getApplicationContext(), "Login successful!", Toast.LENGTH_SHORT).show();
 //                finish();
             } else {
-//                mPasswordView.setError(getString(R.string.error_incorrect_password));
-//                mPasswordView.requestFocus();
-            }
-
-            if (success) {
-                Toast.makeText(getApplicationContext(), "Upload successful!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getApplicationContext(), "Upload failed!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Login failed!", Toast.LENGTH_SHORT).show();
+                mSignalAcquisitionButton.setError(getString(R.string.error_incorrect_password));
+                mSignalAcquisitionButton.requestFocus();
             }
         }
 
@@ -276,22 +307,6 @@ public class LoginActivity extends AppCompatActivity {
         protected void onCancelled() {
             mAuthTask = null;
             showProgress(false);
-        }
-
-
-
-
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-
-            boolean result = false;
-            try {
-                result =doUploadDB();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return result;
         }
 
         //Handle SSL and HTTP connection
@@ -315,17 +330,14 @@ public class LoginActivity extends AppCompatActivity {
                     return new X509Certificate[0]; }}}, new SecureRandom());
 
             HttpsURLConnection.setDefaultSSLSocketFactory(sslctxt.getSocketFactory());
-
-            String UP_URL = "http://192.168.0.17:8080/login";
-
-            return (HttpURLConnection) new URL(UP_URL).openConnection();
+            return (HttpURLConnection) new URL(mServerUrl).openConnection();
         }
 
-        private boolean doUploadDB() throws Exception {
+        private boolean doLogin() throws Exception {
+            Log.d(TAG, "doLogin()");
+
             final String mark_boundary = "XXXXXXXXXXXXX";
             HttpURLConnection conn = returnHttpSSLConn();
-
-            Log.d(TAG, "doUploadDb()");
 
             final int connectTimeout = 5000;
             final int readTimeout = 50000;
@@ -338,27 +350,26 @@ public class LoginActivity extends AppCompatActivity {
             conn.setRequestProperty("Connection", "Keep-Alive");
             conn.setRequestProperty("Cache-Control", "no-cache");
             //boundary usage: https://stackoverflow.com/questions/11766878/sending-files-using-post-with-httpurlconnection
-            conn.setRequestProperty(
-                    "Content-Type", "multipart/form-data;boundary=" + mark_boundary);
+            conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + mark_boundary);
 
             DataOutputStream httpPacket = new DataOutputStream(conn.getOutputStream());
 
-            /*
+            /* Request looks like this:
 
-------WebKitFormBoundaryQAN2O0TwVBTFDVBc
-Content-Disposition: form-data; name="username"
+                ------WebKitFormBoundaryQAN2O0TwVBTFDVBc
+                Content-Disposition: form-data; name="username"
 
-Matt
-------WebKitFormBoundaryQAN2O0TwVBTFDVBc
-Content-Disposition: form-data; name="signal"; filename="S001R03_22.txt"
-Content-Type: text/plain
+                Matt
+                ------WebKitFormBoundaryQAN2O0TwVBTFDVBc
+                Content-Disposition: form-data; name="signal"; filename="S001R03_22.txt"
+                Content-Type: text/plain
 
 
-------WebKitFormBoundaryQAN2O0TwVBTFDVBc
-Content-Disposition: form-data; name="Login"
+                ------WebKitFormBoundaryQAN2O0TwVBTFDVBc
+                Content-Disposition: form-data; name="Login"
 
-Submit
-------WebKitFormBoundaryQAN2O0TwVBTFDVBc--
+                Submit
+                ------WebKitFormBoundaryQAN2O0TwVBTFDVBc--
 
              */
 
@@ -369,7 +380,7 @@ Submit
             // Write Username
             httpPacket.writeBytes("--" + mark_boundary + "\r\n");
             httpPacket.writeBytes("Content-Disposition: form-data; name=\"username\"\r\n\r\n");
-            httpPacket.writeBytes("Matt\r\n");
+            httpPacket.writeBytes(String.format("%s\r\n", mUsername));
 
             // Write Submit
             httpPacket.writeBytes("--" + mark_boundary + "\r\n");
@@ -379,10 +390,8 @@ Submit
             httpPacket.writeBytes("--" + mark_boundary + "\r\n");
             httpPacket.writeBytes("Content-Disposition: form-data; name=\"signal\"; filename=\"signal.txt\"\r\n\r\n");
 
-            // Write data
-            String file_path = Environment.getExternalStorageDirectory() + File.separator + "S001R03_22.txt";
-
-            FileInputStream db_file = new FileInputStream(file_path);
+            // Write signal data
+            FileInputStream db_file = new FileInputStream(mSignalFilePath);
             byte[] output_buf = new byte[4096];
             int cnt = 0;
             while((cnt = db_file.read(output_buf)) > 0){
@@ -397,7 +406,7 @@ Submit
             httpPacket.close();
             final int status = conn.getResponseCode();
             if (status != HttpURLConnection.HTTP_OK) {
-                Log.e("uploadDb", "Failed with http status: " + status);
+                Log.e(TAG, "Failed with http status: " + status);
                 return false;
             }
 

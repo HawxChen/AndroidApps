@@ -1,5 +1,7 @@
 package com.brainet.brainetclient;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +20,8 @@ public class SignalAcquisitionActivity extends AppCompatActivity {
                 seconds_remaining -= 1;
                 timer_handler.postDelayed(this, 1000);
             } else {
+                Intent resultIntent = new Intent();
+                setResult(Activity.RESULT_OK, resultIntent);
                 finish();
             }
         }
