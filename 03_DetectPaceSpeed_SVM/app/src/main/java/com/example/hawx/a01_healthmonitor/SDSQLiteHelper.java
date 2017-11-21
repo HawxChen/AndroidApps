@@ -3,6 +3,8 @@ import android.database.Cursor;
 import android.os.Environment;
 import java.lang.String;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.util.Log;
@@ -18,6 +20,7 @@ public class SDSQLiteHelper {
     private SQLiteDatabase db;
     private String DB_NAME      = "Group25.db";
     private static String rowsymbol = "";
+    public static List<String> rowsymbolList = new ArrayList<String>();
 
 
     public static class SDSQLiteSchema {
@@ -40,6 +43,9 @@ public class SDSQLiteHelper {
                 rowsymbol = rowsymbol + SDSQLiteSchema.X_FIELD + i + " REAL NOT NULL, "
                         + SDSQLiteSchema.Y_FIELD+ i + " REAL NOT NULL, "
                         + SDSQLiteSchema.Z_FIELD+ i  + " REAL NOT NULL, ";
+                rowsymbolList.add(SDSQLiteSchema.X_FIELD + i);
+                rowsymbolList.add(SDSQLiteSchema.Y_FIELD + i);
+                rowsymbolList.add(SDSQLiteSchema.Z_FIELD + i);
             }
         }
 
@@ -76,14 +82,17 @@ public class SDSQLiteHelper {
                 + SDSQLiteSchema.LABEL_FIELD + " INTEGER NOT NULL DEFAULT " + PaceJustification.PaceStatus.INIT
                 + " ); ";
 
-        Log.e(TAG, "Creating Table in datbase " + db.toString());
-        Log.e(TAG, "SQL Query: " + CMD);
-
+        //FOR TEST /*
         db.beginTransaction();
         db.execSQL("DROP TABLE IF EXISTS " + tableName);
+        Log.e(TAG, "Delete old table " + tableName);
         db.setTransactionSuccessful();
         db.endTransaction();
 
+        Log.e(TAG, "Creating Table in datbase " + db.toString());
+        Log.e(TAG, "SQL Query: " + CMD);
+
+        // */
         db.beginTransaction();
         db.execSQL(CMD);
         db.setTransactionSuccessful();

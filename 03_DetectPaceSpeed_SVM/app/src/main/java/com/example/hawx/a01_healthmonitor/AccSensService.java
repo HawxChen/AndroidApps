@@ -20,9 +20,9 @@ import android.util.Log;
 public class AccSensService extends Service implements SensorEventListener {
     public static class AccSensData{
         public long mTStamp; //We should reference the record by primary key's order.
-        private double []x = new double [NUM_SAMPLES_PER_ROUND];
-        private double []y = new double [NUM_SAMPLES_PER_ROUND];
-        private double []z = new double [NUM_SAMPLES_PER_ROUND];
+        public double []x = new double [NUM_SAMPLES_PER_ROUND];
+        public double []y = new double [NUM_SAMPLES_PER_ROUND];
+        public double []z = new double [NUM_SAMPLES_PER_ROUND];
         public int label;
     }
 

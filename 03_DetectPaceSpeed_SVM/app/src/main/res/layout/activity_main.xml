@@ -14,7 +14,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="91dp"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <LinearLayout
@@ -24,50 +24,8 @@
             android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="63dp"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textView2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Patient ID" />
-
-                <EditText
-                    android:id="@+id/idText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ems="10"
-                    android:inputType="numberDecimal"
-                    android:text="123" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="45dp"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textView3"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Age" />
-
-                <EditText
-                    android:id="@+id/ageText"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:ems="10"
-                    android:inputType="numberDecimal"
-                    android:text="33" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1.05"
                 android:orientation="vertical">
 
                 <TextView
@@ -79,46 +37,19 @@
                 <EditText
                     android:id="@+id/nameText"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:ems="10"
                     android:inputType="textPersonName"
                     android:text="Peter Parker" />
 
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textView5"
+                <Button
+                    android:id="@+id/bcleantable"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sex" />
-
-                <RadioGroup
-                    android:id="@+id/bgroup"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_weight="0.72"
-                    android:checkedButton="@+id/maleBtn">
-
-                    <RadioButton
-                        android:id="@+id/maleBtn"
-                        android:layout_width="match_parent"
-                        android:layout_height="22dp"
-                        android:text="Male" />
-
-                    <RadioButton
-                        android:id="@+id/femaleBtn"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Female" />
-
-                </RadioGroup>
+                    android:text="Clear Patient DB" />
 
             </LinearLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -127,18 +58,18 @@
             android:orientation="vertical">
 
             <Button
-                android:id="@+id/brun"
+                android:id="@+id/brecord"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#00ff00"
-                android:text="Run" />
+                android:text="Record" />
 
             <Button
-                android:id="@+id/bstop"
+                android:id="@+id/banalyzing"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="#ff0000"
-                android:text="Stop" />
+                android:text="Analyzing" />
 
         </LinearLayout>
 
@@ -148,39 +79,86 @@
             android:orientation="vertical">
 
             <Button
-                android:id="@+id/bupload"
+                android:id="@+id/bdraw3d"
                 android:layout_width="match_parent"
                 android:layout_height="37dp"
-                android:text="Upload" />
+                android:text="Draw_3D" />
 
             <Button
-                android:id="@+id/bdownload"
+                android:id="@+id/boffload"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="download" />
+                android:text="Offload" />
         </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="415dp"
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/textView6"
+            android:id="@+id/ResultText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Show Result!"
             android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
-        <FrameLayout
-            android:id="@+id/framedraw"
+        <TextView
+            android:id="@+id/model_accuracy"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="0.97">
+            android:layout_height="wrap_content"
+            android:text="Model's accuracy: " />
 
-        </FrameLayout>
+        <TextView
+            android:id="@+id/textView7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView8"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView9"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView10"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView11"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView12"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView13"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView14"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
     </LinearLayout>
 
 </LinearLayout>

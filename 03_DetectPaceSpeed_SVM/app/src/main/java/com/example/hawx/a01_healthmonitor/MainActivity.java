@@ -23,8 +23,6 @@ import android.os.Handler;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.util.Log;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -33,7 +31,6 @@ import android.widget.Toast;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.ArrayList;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -50,7 +47,6 @@ import javax.net.ssl.HostnameVerifier;
 
 public class MainActivity extends Activity implements View.OnClickListener {
     private float[] mUptV;
-    private GraphView mGview;
     private boolean mRunning = false;
     private Handler mHandler = new Handler();
     private HMonitorRunnable mJob;
@@ -58,12 +54,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private String mConcatName = "a";
     private String mTableNameCurrentOpen = "";
     private EditText mNameInput;
-    private EditText mIDInput;
-    private EditText mAgeInput;
-    private RadioButton mSexBtn;
     private SDSQLiteHelper sddbhelper;
     private SQLiteDatabase sddb;
-    private HashMap<String, Boolean> createdTableName = new HashMap();
     private static final String TAG  = "MainActivity";
     private static final String UP_URL = "http://10.218.110.136/CSE535Fall17Folder/UploadToServer.php";
     //private static final String UP_URL = "https://192.168.0.17/CSE535Fall17Folder/UploadToServer.php";
@@ -81,39 +73,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
 
         // Connect listeners
-        findViewById(R.id.brun).setOnClickListener(this);
-        findViewById(R.id.bstop).setOnClickListener(this);
-        findViewById(R.id.bupload).setOnClickListener(this);
-        findViewById(R.id.bdownload).setOnClickListener(this);
+        findViewById(R.id.brecord).setOnClickListener(this);
+        findViewById(R.id.banalyzing).setOnClickListener(this);
+        findViewById(R.id.boffload).setOnClickListener(this);
+        findViewById(R.id.bcleantable).setOnClickListener(this);
+        findViewById(R.id.bdraw3d).setOnClickListener(this);
         mNameInput = findViewById(R.id.nameText);
-        mAgeInput = findViewById(R.id.ageText);
-        mIDInput = findViewById(R.id.idText);
 
 
-        // Instantiate the Graph View
-        FrameLayout fLayout = findViewById(R.id.framedraw);
-        mUptV = new float[NUM_RECORD_MAX];
-        String[] horizmark = new String[]{"-10", "-9", "-8", "-7", "-6","-5","-4", "-3", "-2", "-1", "0"};
-        String[] vertimark = new String[]{"10", "0", "-10"};
-        mGview = new GraphView(this, mUptV, "Group 25's HealthMonitor", horizmark, vertimark, true);
-        fLayout.addView(mGview);
-
-        // Dummy handler for radio button changes
-        RadioGroup radioGroup = (RadioGroup) findViewById(R.id.bgroup);
-        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener(){
-            @Override
-            public void onCheckedChanged(RadioGroup radioGroup, int rgID) {
-                int btnidx = radioGroup.indexOfChild(radioGroup.findViewById(rgID));
-                switch (btnidx) {
-                    case 0:
-                        break;
-                    default:
-                        break;
-                }
-            }
-        });
-
-        mSexBtn = findViewById(radioGroup.getCheckedRadioButtonId());
         SDSQLiteHelper.deleteDB();
         sddbhelper = new SDSQLiteHelper();
         //sddbhelper.createTables(buildConcatTableName());
@@ -135,62 +102,70 @@ public class MainActivity extends Activity implements View.OnClickListener {
     @Override
     public void onClick(View vinfo) {
         switch (vinfo.getId()){
-            case R.id.brun:
-                onRunBtn();
+            case R.id.brecord:
+                onRecordBtn();
                 break;
-            case R.id.bstop:
-                onStopBtn();
+            case R.id.banalyzing:
+                onAnalyzingBtn();
                 break;
-            case R.id.bupload:
-                onUploadBtn();
+            case R.id.boffload:
+                onOffloaddBtn();
                 break;
-            case R.id.bdownload:
-                onDownloadBtn();
+            case R.id.bdraw3d:
+                onDraw3DBtn();
                 break;
+            case R.id.bcleantable:
+                onCleanDBtn();
             default:
         }
     }
 
     private String buildConcatTableName() {
-         mConcatName = mNameInput.getText().toString() + "_"
-                + mIDInput.getText().toString() + "_"
-                + mAgeInput.getText().toString() + "_"
-                + mSexBtn.getText().toString();
+         mConcatName = mNameInput.getText().toString() + "_";
+
         mConcatName = mConcatName.replaceAll("\\s+", "");
         return mConcatName;
     }
 
     //
-    // Run button handler
+    // Record button handler
     //
-    private void onRunBtn() {
+    private void onRecordBtn() {
         Log.d(TAG, "onRunBtn");
 
         if (mRunning) {
-            // mHandler.removeCallbacks(mJob);
-            // mUptV = new float[0];
             return;
         }
-        svm_train train = new svm_train();
-        svm_scale scale = new svm_scale();
 
         buildConcatTableName();
 
-//        if(!createdTableName.containsKey(mConcatName)) {
-            sddbhelper.createTables(mConcatName);
-//            createdTableName.put(mConcatName, true);
-//        }
+        sddbhelper.createTables(mConcatName);
+        sddb = sddbhelper.getWritableDatabase(mConcatName);
+        mTableNameCurrentOpen = "\"" + mConcatName + "\"";
+        startAccSensService();
 
+        mRunning = true;
+    }
 
-        //if(!mTableNameCurrentOpen.equals(mConcatName)) {
-            sddb = sddbhelper.getWritableDatabase(mConcatName);
-            mTableNameCurrentOpen = "\"" + mConcatName + "\"";
-            startAccSensService();
-        //}
+    //
+    // Analyzing button handler
+    //
+    private void onAnalyzingBtn() {
+        if(!mRunning){
+            return;
+        }
+        mRunning = false;
+        stopAccSensService();
+    }
 
-        //mJob = new HMonitorRunnable();
-        // mRunning = true;
-        // mHandler.post(mJob);
+    private void onCleanDBtn() {
+
+    }
+    private void onOffloaddBtn() {
+
+    }
+    private void onDraw3DBtn() {
+
     }
 
     //
@@ -212,15 +187,24 @@ public class MainActivity extends Activity implements View.OnClickListener {
         stopService(intent);
     }
 
+
+
+
+    // End of Assignment 3
+    //=============================================================================================
+    //=============================================================================================
+    //=============================================================================================
+    //=============================================================================================
+    //=============================================================================================
+    //=============================================================================================
+    //=============================================================================================
+    //=============================================================================================
+
+
+
     //
-    // Stop button handler
+    // Background task to upload the database to the remote server
     //
-    private void onStopBtn() {
-        mGview.setValues(new float[0]);
-        mGview.invalidate();
-        mRunning = false;
-        stopAccSensService();
-    }
 
     //
     // Upload button handler
@@ -269,10 +253,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         isUploading = true;
         new UploadDBTask().execute();
     }
-
-    //
-    // Background task to upload the database to the remote server
-    //
     private class UploadDBTask extends AsyncTask<String, Void, Boolean> {
         @Override
         protected void onPreExecute() {
@@ -386,7 +366,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
     //
     private void onDownloadBtn() {
         // Stop if we are already running (simply use the stop button handler)
-        onStopBtn();
 
         //
         // Check for basic network connectivity
@@ -471,7 +450,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
             sddb = sddbhelper.getWritableDatabase(mConcatName);
 
             // Draw it once (per assignment spec)
-            //new RedrawJob().execute();
+            // new RedrawJob().execute();
         }
 
         @Override
@@ -575,8 +554,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     // Redraw view
     //
     private void redrawView() {
-        mGview.setValues(mUptV);
-        mGview.invalidate();
+
     }
 
     //
@@ -592,19 +570,81 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
 
     //
+    // Update graph data
+    //
+    private void updateAccValues(ArrayList<AccSensService.AccSensData> accData) {
+        int len = accData.size();
+        float[] values = new float[len * 3];
+        for(int i = 0; i < len; i++){
+            AccSensService.AccSensData tmp = accData.get(i);
+            values[i * 3 ] = (float) tmp.x[i];
+            values[i * 3 + 1] = (float) tmp.y[i];
+            values[i * 3 + 2] = (float) tmp.z[i];
+        }
+        mUptV = values;
+    }
+
+    //
     // Load a sample object with data from an SQL query result
     //
     private static AccSensService.AccSensData translateRecord(Cursor cursor){
         AccSensService.AccSensData ret_data = new AccSensService.AccSensData();
-        // ret_data.x = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD));
-        // ret_data.y = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD));
-        // ret_data.z = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD));
-        ret_data.label = cursor.getInt(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.LABEL_FIELD));
+        for(int i = 1; i <= AccSensService.NUM_SAMPLES_PER_SECOND; i++) {
+            ret_data.x[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD+i));
+            ret_data.y[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD+i));
+            ret_data.z[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD+i));
+        }
+
+
         return ret_data;
     }
 
     //
     // Background task to fetch and draw the last ten seconds of samples
     //
+    private class RedrawJob extends AsyncTask<Void, Void, ArrayList<AccSensService.AccSensData>> {
+        @Override
+        protected ArrayList<AccSensService.AccSensData> doInBackground(Void... params) {
+            return readfromTable();
+        }
 
+        // Redraw view after the samples have been retrievde
+        @Override
+        protected void onPostExecute(ArrayList<AccSensService.AccSensData> sensorDatas) {
+            updateAccValues(sensorDatas);
+            redrawView();
+            mHandler.postDelayed(mJob, 1000);
+        }
+
+        // Load last ten seconds of samples from database
+        private ArrayList<AccSensService.AccSensData> readfromTable() {
+            // Read the prior ten second data
+            sddb.beginTransaction();
+            Cursor cursor =  sddb.query(
+                    mTableNameCurrentOpen,
+                    SDSQLiteHelper.rowsymbolList.toArray(new String[0]),
+                    null,
+                    null,
+                    null,
+                    null,
+                    SDSQLiteHelper.SDSQLiteSchema.INCREASE_ID + " DESC", // Order by timestamps (take most recent first (descending))
+                    "1" // Limit last 10 seconds
+            );
+            sddb.setTransactionSuccessful();
+            sddb.endTransaction();
+
+            if(cursor == null) return new ArrayList<>(0);
+
+            ArrayList<AccSensService.AccSensData> dataRecord = new ArrayList<>(0);
+            if(cursor.moveToFirst()){
+                do{
+                    AccSensService.AccSensData data = translateRecord(cursor);
+                    dataRecord.add(0, data);
+                }while (cursor.moveToNext());
+            }
+            cursor.close();
+            Log.e("DEBUG", "Record Size:" + dataRecord.size());
+            return dataRecord;
+        }
+    }
 }
