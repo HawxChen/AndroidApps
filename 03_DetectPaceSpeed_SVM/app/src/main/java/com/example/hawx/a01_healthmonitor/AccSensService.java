@@ -33,6 +33,9 @@ public class AccSensService extends Service implements SensorEventListener {
     public static final int NUM_SAMPLE_SECONDS = 5;
     public static final int NUM_SAMPLES_PER_SECOND = (1000000/NUM_MICROSEC);
     public static final int NUM_SAMPLES_PER_ROUND = NUM_SAMPLE_SECONDS*NUM_SAMPLES_PER_SECOND;
+    public static final int NUM_TIMES_PER_ACT = 20;
+    public static final int NUM_ACTS_PER_TRAIN = 3; //***** Adjustable ******//
+    public static final int NUM_TOTAL_TIMES_PER_TRAIN = AccSensService.NUM_ACTS_PER_TRAIN*AccSensService.NUM_TIMES_PER_ACT;
     public static final String KEY_TBNAME = "_tbname";
 //    public static final String ACC_ACTION = "com.example.hawx.a01_healthmonitor/.AccSensService";
     private SensorManager mAccSensMgr;

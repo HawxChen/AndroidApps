@@ -82,17 +82,18 @@ public class SDSQLiteHelper {
                 + SDSQLiteSchema.LABEL_FIELD + " INTEGER NOT NULL DEFAULT " + PaceJustification.PaceStatus.INIT
                 + " ); ";
 
-        //FOR TEST /*
+        /* FOR TEST
         db.beginTransaction();
         db.execSQL("DROP TABLE IF EXISTS " + tableName);
         Log.e(TAG, "Delete old table " + tableName);
         db.setTransactionSuccessful();
         db.endTransaction();
+         */
 
         Log.e(TAG, "Creating Table in datbase " + db.toString());
         Log.e(TAG, "SQL Query: " + CMD);
 
-        // */
+
         db.beginTransaction();
         db.execSQL(CMD);
         db.setTransactionSuccessful();

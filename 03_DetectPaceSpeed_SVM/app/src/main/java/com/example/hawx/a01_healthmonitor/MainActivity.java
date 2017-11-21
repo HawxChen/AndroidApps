@@ -12,19 +12,25 @@
 package com.example.hawx.a01_healthmonitor;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.util.Log;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.FileOutputStream;
@@ -43,6 +49,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.HostnameVerifier;
+import static com.example.hawx.a01_healthmonitor.R.raw.fakegroup25;
+
+
 
 public class MainActivity extends Activity implements View.OnClickListener {
     private boolean mRunning = false;
@@ -58,6 +67,22 @@ public class MainActivity extends Activity implements View.OnClickListener {
     //private static final String DOWN_URL = "https://192.168.0.17/CSE535Fall17Folder/Group25.db";
     private static final String DOWNLOAD_FILENAME = "CSE535_ASSIGNMENT2_Extra";
     private boolean isUploading = false;
+    private Button bRecord;
+    private Button bAnalyzing;
+    private Button bOffload;
+    private Button bDraw3D;
+    private Button bcleanTable;
+    private TextView resulText;
+    private AlertDialog recordDialog, analyzingDialog;
+    private static final boolean OFFICIAL_RELEASE = false;
+    private static final File svm_dir_path = Environment.getExternalStorageDirectory();
+    private static final String svm_model_file_name = "svm_model.txt";
+    private static final String svm_raw_training_file_name = "svm_training_data.txt";
+    private static final String svm_raw_testing_file_name = "svm_testing_data.txt";
+    private static boolean bSvm_trained = false;
+    private CountDownTimer analyzingTimer;
+
+
 
     //
     // onCreate
@@ -68,17 +93,30 @@ public class MainActivity extends Activity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
 
         // Connect listeners
-        findViewById(R.id.brecord).setOnClickListener(this);
-        findViewById(R.id.banalyzing).setOnClickListener(this);
-        findViewById(R.id.boffload).setOnClickListener(this);
-        findViewById(R.id.bcleantable).setOnClickListener(this);
-        findViewById(R.id.bdraw3d).setOnClickListener(this);
-        mNameInput = findViewById(R.id.nameText);
+        bRecord = (Button)findViewById(R.id.brecord);
+        bAnalyzing = (Button)findViewById(R.id.banalyzing);
+        bOffload = (Button)findViewById(R.id.boffload);
+        bDraw3D = (Button)findViewById(R.id.bdraw3d);
+        bcleanTable = (Button)findViewById(R.id.bcleantable);
 
+        bRecord.setOnClickListener(this);
+        bAnalyzing.setOnClickListener(this);
+        bOffload.setOnClickListener(this);
+        bDraw3D.setOnClickListener(this);
+        bcleanTable.setOnClickListener(this);
+
+        resulText = findViewById(R.id.ResultText);
+
+        mNameInput = findViewById(R.id.nameText);
 
         SDSQLiteHelper.deleteDB();
         sddbhelper = new SDSQLiteHelper();
-        //sddbhelper.createTables(buildConcatTableName());
+
+        /* Official Release  */
+        if(OFFICIAL_RELEASE) {
+            bcleanTable.setEnabled(false);
+        }
+
     }
 
     //
@@ -116,7 +154,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     }
 
     private String buildConcatTableName() {
-         mConcatName = mNameInput.getText().toString() + "_";
+        mConcatName = mNameInput.getText().toString() + "_";
 
         mConcatName = mConcatName.replaceAll("\\s+", "");
         return mConcatName;
@@ -140,6 +178,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         startAccSensService();
 
         mRunning = true;
+        showRecordWaiting();
     }
 
     //
@@ -151,6 +190,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
         mRunning = false;
         stopAccSensService();
+        showAnalyziing();
     }
 
     private void onCleanDBtn() {
@@ -182,10 +222,146 @@ public class MainActivity extends Activity implements View.OnClickListener {
         stopService(intent);
     }
 
+    //https://developer.android.com/reference/android/os/CountDownTimer.html
+    private void showRecordWaiting() {
+        AlertDialog.Builder recordshow = new AlertDialog.Builder(this);
+        recordshow.setCancelable(false);
+        recordshow.setMessage("Start Sensor & Collect data for at least 5 seconds!!!");
+
+        recordDialog = recordshow.create();
+        recordDialog.show();
+        new CountDownTimer(6*1000, 1000) {
+            public void onTick(long mills) {
+                Log.e(TAG, "showRecordWaiting -- Seconds remaining: " + mills/1000);
+            }
+            public void onFinish(){
+                Log.e(TAG, "showRecordWaiting -- Done! ");
+
+                recordDialog.dismiss();
+            }
+        }.start();
+
+    }
+
+    private void showAnalyziing() {
+        AlertDialog.Builder recordshow = new AlertDialog.Builder(this);
+        recordshow.setCancelable(false);
+        recordshow.setMessage("Stopped Sensor and Analyzing.....!!!");
+
+        analyzingDialog = recordshow.create();
+        analyzingDialog.show();
+        analyzingTimer = new CountDownTimer(10000*1000, 1000) {
+            boolean firstTime = true;
+            public void onTick(long mills) {
+                Log.e(TAG, "showAnalyziing -- Seconds remaining: " + mills/1000);
+                if(firstTime) {
+                    new AnalyzingTask().execute();
+                    firstTime = false;
+                }
+            }
+            public void onFinish(){
+                Log.e(TAG, "showAnalyziing -- Starting Analyzing! ");
+
+            }
+        };
+        analyzingTimer.start();
+
+    }
+    private boolean checkFileExist(String file_name) {
+        String check_file_name = svm_dir_path.getAbsolutePath() + File.pathSeparator + file_name;
+        Log.e(TAG, "Check " + check_file_name + " existing?!?!?");
+
+        return new File(file_name).exists();
+    }
+    //
+
+    // Load a sample object with data from an SQL query result
+    //
+    private static AccSensService.AccSensData translateRecord(Cursor cursor){
+        AccSensService.AccSensData ret_data = new AccSensService.AccSensData();
+        for(int i = 1; i <= AccSensService.NUM_SAMPLES_PER_SECOND; i++) {
+            ret_data.x[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD+i));
+            ret_data.y[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD+i));
+            ret_data.z[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD+i));
+        }
+
+
+        return ret_data;
+    }
+    private boolean eachRecordtoString(Cursor cursor, String allMatrix[]) {
+        if(cursor.moveToFirst()){
+            do{
+                AccSensService.AccSensData data = translateRecord(cursor);
+
+            }while (cursor.moveToNext());
+        }
+        return true;
+    }
+
+    private boolean translateDBtoFile (String db_name, String output_file_name) {
+        String[] queryFields = SDSQLiteHelper.rowsymbolList.toArray(new String[SDSQLiteHelper.rowsymbolList.size()+1]);
+        queryFields[SDSQLiteHelper.rowsymbolList.size()] = new String(SDSQLiteHelper.SDSQLiteSchema.LABEL_FIELD);
+        sddb.beginTransaction();
+        Cursor cursor =  sddb.query(
+                mTableNameCurrentOpen,
+                queryFields,
+                null,
+                null,
+                null,
+                null,
+                SDSQLiteHelper.SDSQLiteSchema.INCREASE_ID + " DESC", // Order by timestamps (take most recent first (descending))
+                Integer.toString(AccSensService.NUM_TOTAL_TIMES_PER_TRAIN) // Limit last 10 seconds
+        );
+        sddb.setTransactionSuccessful();
+        sddb.endTransaction();
+
+        if(cursor == null) return false;
+
+        //String []allMatrix = new String[0];
+        // eachRecordtoString(cursor, allMatrix);
+
+        cursor.close();
+
+        return true;
+    }
+
+    private class AnalyzingTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();;
+
+            return;
+        }
+
+        @Override
+        protected void onPostExecute(Void voids) {
+
+        }
 
 
 
-    // End of Assignment 3
+        @Override
+        protected Void doInBackground(Void... voids) {
+            //Check if we have trained data first!
+            Log.e(TAG, "AnalyzingTask: doInBackground!!!!! ");
+            if(checkFileExist(svm_raw_training_file_name)) { //testing version
+            // if(checkFileExist(svm_raw_training_file_name)) { //Official version
+                //if not, just train it!
+                Log.e(TAG, "AnalyzingTask: Training!!!!! ");
+            }
+
+
+
+
+            analyzingDialog.dismiss();
+            analyzingTimer.cancel();
+            return null;
+        }
+    }
+
+
+
+        // End of Assignment 3
     //=============================================================================================
     //=============================================================================================
     //=============================================================================================
@@ -605,20 +781,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mUptV = values;
     }
 
-    //
-    // Load a sample object with data from an SQL query result
-    //
-    private static AccSensService.AccSensData translateRecord(Cursor cursor){
-        AccSensService.AccSensData ret_data = new AccSensService.AccSensData();
-        for(int i = 1; i <= AccSensService.NUM_SAMPLES_PER_SECOND; i++) {
-            ret_data.x[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD+i));
-            ret_data.y[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD+i));
-            ret_data.z[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD+i));
-        }
 
-
-        return ret_data;
-    }
 
     //
     // Background task to fetch and draw the last ten seconds of samples
