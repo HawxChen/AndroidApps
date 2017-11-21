@@ -33,9 +33,12 @@ import android.net.NetworkInfo;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -44,6 +47,8 @@ import java.io.FileInputStream;
 import java.io.DataOutputStream;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.List;
+
 import javax.net.ssl.X509TrustManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
@@ -75,10 +80,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private TextView resulText;
     private AlertDialog recordDialog, analyzingDialog;
     private static final boolean OFFICIAL_RELEASE = false;
-    private static final File svm_dir_path = Environment.getExternalStorageDirectory();
+
+    private static final String svm_dir_path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "CSE535_ASSIGNMENT2";
     private static final String svm_model_file_name = "svm_model.txt";
+    private static final String svm_dup_db_name = "svm_fakedb.db";
     private static final String svm_raw_training_file_name = "svm_training_data.txt";
     private static final String svm_raw_testing_file_name = "svm_testing_data.txt";
+    private static final String svm_dup_db_abs_path = svm_dir_path + File.separator + svm_dup_db_name;
+    private static final String svm_raw_training_file_abs_path = svm_dir_path + File.separator + svm_raw_training_file_name;
+    private static final String svm_raw_testing_file_abs_path = svm_dir_path + File.separator + svm_raw_testing_file_name;
+    private static final String svm_model_file_abs_path = svm_dir_path + File.separator + svm_model_file_name;
+
     private static boolean bSvm_trained = false;
     private CountDownTimer analyzingTimer;
 
@@ -268,7 +280,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     }
     private boolean checkFileExist(String file_name) {
-        String check_file_name = svm_dir_path.getAbsolutePath() + File.pathSeparator + file_name;
+        String check_file_name = svm_dir_path + File.separator + file_name;
         Log.e(TAG, "Check " + check_file_name + " existing?!?!?");
 
         return new File(file_name).exists();
@@ -279,30 +291,80 @@ public class MainActivity extends Activity implements View.OnClickListener {
     //
     private static AccSensService.AccSensData translateRecord(Cursor cursor){
         AccSensService.AccSensData ret_data = new AccSensService.AccSensData();
-        for(int i = 1; i <= AccSensService.NUM_SAMPLES_PER_SECOND; i++) {
+        for(int i = 1; i <= AccSensService.NUM_SAMPLES_PER_ROUND; i++) {
             ret_data.x[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.X_FIELD+i));
             ret_data.y[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Y_FIELD+i));
             ret_data.z[i-1] = cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.Z_FIELD+i));
         }
 
+        ret_data.label = (int) cursor.getDouble(cursor.getColumnIndex(SDSQLiteHelper.SDSQLiteSchema.LABEL_FIELD));
+
 
         return ret_data;
     }
-    private boolean eachRecordtoString(Cursor cursor, String allMatrix[]) {
+    private boolean allRecordtoString(Cursor cursor, StringBuilder strBuilder) {
         if(cursor.moveToFirst()){
             do{
                 AccSensService.AccSensData data = translateRecord(cursor);
-
+                strBuilder.append(Integer.toString(data.label));
+                for(int i = 0; i < AccSensService.NUM_SAMPLES_PER_ROUND; i++) {
+                    strBuilder.append(" " + (3*(i+1) -2) + ":" + data.x[i] + " "
+                                     + (3*(i+1) -1) + ":" + data.y[i] + " "
+                                     + 3*(i+1) + ":" + data.z[i]
+                    );
+                }
+                strBuilder.append("\n");
             }while (cursor.moveToNext());
         }
         return true;
     }
 
-    private boolean translateDBtoFile (String db_name, String output_file_name) {
+    private boolean IN_OUT_stream(InputStream is, FileOutputStream fos) {
+        byte[] buf = new byte[8192];
+        int cnt;
+        try{
+            while ((cnt = is.read(buf)) > 0) {
+                fos.write(buf, 0, cnt);
+            }
+            is.close();
+            fos.flush();
+            fos.close();
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+    private boolean duplicateRawDb(String output_db_name) {
+        Log.e(TAG, "Duplicated path is: " + output_db_name);
+        try{
+            IN_OUT_stream(getResources().openRawResource(fakegroup25),new FileOutputStream(new File(output_db_name), false));
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+    private boolean writeRecordToFile(StringBuilder strBuilder, String output_file_abs_path) {
+        File outputFile = new File(output_file_abs_path);
+        try{
+            IN_OUT_stream(new ByteArrayInputStream(strBuilder.toString().getBytes(StandardCharsets.UTF_8)), new FileOutputStream(outputFile));
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+    private boolean translateDBtoFile (String db_abs_path, String output_file_abs_path) {
         String[] queryFields = SDSQLiteHelper.rowsymbolList.toArray(new String[SDSQLiteHelper.rowsymbolList.size()+1]);
         queryFields[SDSQLiteHelper.rowsymbolList.size()] = new String(SDSQLiteHelper.SDSQLiteSchema.LABEL_FIELD);
-        sddb.beginTransaction();
-        Cursor cursor =  sddb.query(
+
+        SQLiteDatabase local_db = SQLiteDatabase.openDatabase(db_abs_path, null, SQLiteDatabase.OPEN_READWRITE);
+        local_db.beginTransaction();
+        Cursor cursor =  local_db.query(
                 mTableNameCurrentOpen,
                 queryFields,
                 null,
@@ -310,18 +372,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 null,
                 null,
                 SDSQLiteHelper.SDSQLiteSchema.INCREASE_ID + " DESC", // Order by timestamps (take most recent first (descending))
-                Integer.toString(AccSensService.NUM_TOTAL_TIMES_PER_TRAIN) // Limit last 10 seconds
+                Integer.toString(AccSensService.NUM_TOTAL_TIMES_PER_TRAIN) // At least 60 activities.
         );
-        sddb.setTransactionSuccessful();
-        sddb.endTransaction();
+        local_db.setTransactionSuccessful();
+        local_db.endTransaction();
 
         if(cursor == null) return false;
 
-        //String []allMatrix = new String[0];
-        // eachRecordtoString(cursor, allMatrix);
+        StringBuilder strBuilder = new StringBuilder();
+        allRecordtoString(cursor, strBuilder);
+        writeRecordToFile(strBuilder, svm_raw_training_file_abs_path);
 
         cursor.close();
-
+        local_db.close();
         return true;
     }
 
@@ -344,10 +407,22 @@ public class MainActivity extends Activity implements View.OnClickListener {
         protected Void doInBackground(Void... voids) {
             //Check if we have trained data first!
             Log.e(TAG, "AnalyzingTask: doInBackground!!!!! ");
-            if(checkFileExist(svm_raw_training_file_name)) { //testing version
-            // if(checkFileExist(svm_raw_training_file_name)) { //Official version
+            if(true || !checkFileExist(svm_raw_training_file_name)) { //testing version
+            // if(!checkFileExist(svm_raw_training_file_name)) { //Official version
                 //if not, just train it!
                 Log.e(TAG, "AnalyzingTask: Training!!!!! ");
+                duplicateRawDb(svm_dup_db_abs_path);
+                translateDBtoFile(svm_dup_db_abs_path, svm_raw_training_file_abs_path);
+                svm_train train_inst = new svm_train();
+                svm_scale scale_inst = new svm_scale();
+                String[] trainParam = {svm_raw_training_file_abs_path, svm_model_file_abs_path};
+                String[] scaleParam = {svm_raw_training_file_abs_path};
+                try {
+                    scale_inst.main(scaleParam);
+                    train_inst.main(trainParam);
+                } catch (java.io.IOException e) {
+                    e.printStackTrace();
+                }
             }
 
 
