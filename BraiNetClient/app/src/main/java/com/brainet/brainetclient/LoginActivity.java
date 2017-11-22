@@ -199,7 +199,7 @@ public class LoginActivity extends AppCompatActivity {
         String username = mUsernameView.getText().toString();
 
         boolean cancel = false;
-        View focusView = null;
+        View focusView = mUsernameView;
 
         // Check for a valid username.
         if (TextUtils.isEmpty(username)) {
