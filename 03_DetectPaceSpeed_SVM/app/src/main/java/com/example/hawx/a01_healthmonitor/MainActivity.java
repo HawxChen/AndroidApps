@@ -97,6 +97,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private CountDownTimer analyzingTimer;
     private svm_train train_inst = new svm_train();
     private svm_scale scale_inst = new svm_scale();
+    private svm_predict predict_inst = new svm_predict();
+    private int num_traing_acts = AccSensService.NUM_TOTAL_TIMES_PER_TRAIN; // // At least 60 activities.
+
     public static double mainAccuracy = 0;
 
 
@@ -378,7 +381,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 null,
                 null,
                 SDSQLiteHelper.SDSQLiteSchema.INCREASE_ID + " DESC", // Order by timestamps (take most recent first (descending))
-                Integer.toString(AccSensService.NUM_TOTAL_TIMES_PER_TRAIN) // At least 60 activities.
+                Integer.toString(num_traing_acts) // At least 60 activities.
         );
         local_db.setTransactionSuccessful();
         local_db.endTransaction();
@@ -423,6 +426,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 try {
                     scale_inst.main(scaleParam);
                     train_inst.main(trainParam);
+                    ///------ testing
+                    // predict_inst.main({input_testing_dtat_file, svm_model_file_abs_path})
                     publishProgress();
                 } catch (java.io.IOException e) {
                     e.printStackTrace();
