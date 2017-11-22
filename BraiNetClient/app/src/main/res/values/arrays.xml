@@ -6,8 +6,8 @@
         <item>Fog Server Only</item>
     </string-array>
     <string-array name="server_select_list_values">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
+        <item>auto</item>
+        <item>remote</item>
+        <item>fog</item>
     </string-array>
 </resources>

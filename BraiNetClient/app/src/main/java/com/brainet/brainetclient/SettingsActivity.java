@@ -118,19 +118,20 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
+    /*
+     * Handle menu item selections
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                // User chose the "up" item
+                // Send result intent to notify Login Activity when preferences change
                 Intent resultIntent = new Intent();
                 setResult(Activity.RESULT_OK, resultIntent);
                 finish();
                 return true;
 
             default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
 
         }

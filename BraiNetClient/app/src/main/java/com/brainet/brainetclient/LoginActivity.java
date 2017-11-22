@@ -22,7 +22,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.DataOutputStream;
@@ -32,6 +32,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -44,20 +45,30 @@ import javax.net.ssl.X509TrustManager;
  */
 public class LoginActivity extends AppCompatActivity {
 
-    /**
-     * Keep track of the login task to ensure we can cancel it if requested.
-     */
-    private UserLoginTask mAuthTask = null;
+    class ServerStatus {
+        public String  addr;
+        public Boolean active;
+        public Boolean request_successful;
+        public long    response_time;
+    }
+
+    private String mServerPref = "";
+
+    private final static String TAG = "LoginActivity";
+
+    private UserLoginTask  mAuthTask = null;
+    private ServerTestTask mServerTestTask = null;
+    private ServerStatus   mRemoteServerStatus;
+    private ServerStatus   mFogServerStatus;
 
     // UI references.
     private AutoCompleteTextView mUsernameView;
-    private Button mSignalAcquisitionButton;
-    private EditText mPasswordView;
-    private View mProgressView;
-    private View mLoginFormView;
+    private Button               mSignalAcquisitionButton;
+    private View                 mProgressView;
+    private View                 mLoginFormView;
+    private TextView             mServerStatusView;
 
-    private String TAG = "LoginActivity";
-
+    // Activity response requests IDs
     public final static int REQUEST_UPDATE_SETTINGS = 1;
     public final static int REQUEST_SIGNAL_ACQUIRED = 2;
 
@@ -85,22 +96,43 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    protected void updatePreferences() {
+        Log.d(TAG, "Settings updated:");
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        String remote_server_addr = prefs.getString("remote_server_addr", "");
+        String fog_server_addr = prefs.getString("fog_server_addr", "");
+        String server_pref = prefs.getString("server_preference", "");
+
+        Log.d(TAG, String.format("Remote Server Addr: %s", remote_server_addr));
+        Log.d(TAG, String.format("Fog Server Addr: %s", fog_server_addr));
+        Log.d(TAG, String.format("Server Preference: %s", server_pref));
+
+        mServerPref = server_pref;
+
+        mRemoteServerStatus.addr = remote_server_addr;
+        mRemoteServerStatus.active = server_pref.equals("remote") || server_pref.equals("auto");
+        mRemoteServerStatus.request_successful = false;
+        mRemoteServerStatus.response_time = 0;
+
+        mFogServerStatus.addr = fog_server_addr;
+        mFogServerStatus.active = server_pref.equals("fog") || server_pref.equals("auto");
+        mFogServerStatus.request_successful = false;
+        mFogServerStatus.response_time = 0;
+
+        /* Test the servers */
+        mServerStatusView.setText("Testing Servers...");
+        mServerTestTask = new ServerTestTask();
+        mServerTestTask.execute((Void) null);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
             case REQUEST_UPDATE_SETTINGS:
                 /* Settings were updated */
-                Log.d(TAG, "Settings updated:");
-
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-                String remote_server_addr = prefs.getString("remote_server_addr", "");
-                String fog_server_addr = prefs.getString("fog_server_addr", "");
-                String server_pref = prefs.getString("server_preference", "");
-
-                Log.d(TAG, String.format("Remote Server Addr: %s", remote_server_addr));
-                Log.d(TAG, String.format("Fog Server Addr: %s", fog_server_addr));
-                Log.d(TAG, String.format("Server Preference: %s", server_pref));
+                updatePreferences();
                 break;
 
             case REQUEST_SIGNAL_ACQUIRED:
@@ -113,21 +145,8 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        // Set up the login form.
-        mUsernameView = (AutoCompleteTextView) findViewById(R.id.username);
-//        mPasswordView = (EditText) findViewById(R.id.password);
-//        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-//            @Override
-//            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-//                if (id == R.id.login || id == EditorInfo.IME_NULL) {
-//                    attemptLogin();
-//                    return true;
-//                }
-//                return false;
-//            }
-//        });
 
-        // Set up Sign-In Button Handler
+        mUsernameView = (AutoCompleteTextView) findViewById(R.id.username);
         Button mSignInButton = (Button) findViewById(R.id.sign_in_button);
         mSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -135,8 +154,6 @@ public class LoginActivity extends AppCompatActivity {
                 attemptLogin();
             }
         });
-
-        // Set up Signal Acquisition Handler
         mSignalAcquisitionButton = (Button) findViewById(R.id.signal_acquisition_button);
         mSignalAcquisitionButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -145,8 +162,14 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        mRemoteServerStatus = new ServerStatus();
+        mFogServerStatus = new ServerStatus();
+
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+        mServerStatusView = (TextView) findViewById(R.id.server_status);
+
+        updatePreferences();
     }
 
     /*
@@ -170,17 +193,13 @@ public class LoginActivity extends AppCompatActivity {
 
         // Reset errors.
         mUsernameView.setError(null);
-//        mPasswordView.setError(null);
+        mSignalAcquisitionButton.setError(null);
 
         // Store values at the time of the login attempt.
         String username = mUsernameView.getText().toString();
-//        String password = mPasswordView.getText().toString();
 
         boolean cancel = false;
         View focusView = null;
-
-        // Check for a valid password, if the user entered one.
-//pass
 
         // Check for a valid username.
         if (TextUtils.isEmpty(username)) {
@@ -193,6 +212,44 @@ public class LoginActivity extends AppCompatActivity {
             cancel = true;
         }
 
+        String serverUrl;
+        String signalFilePath = Environment.getExternalStorageDirectory() + File.separator + "S001R03_22.txt";
+
+        // Check server
+        Boolean useRemote = false;
+        Boolean useFog = false;
+
+        if (mServerPref.equals("auto")) {
+            // Pick server which is available and has lowest latency
+            useRemote = mRemoteServerStatus.request_successful;
+            useFog = mFogServerStatus.request_successful;
+        } else if (mServerPref.equals("remote")) {
+            useRemote = mRemoteServerStatus.request_successful;
+        } else if (mServerPref.equals("fog")) {
+            useFog = mFogServerStatus.request_successful;
+        }
+
+        // Break the tie based on server latency
+        if (useRemote && useFog) {
+            useFog = mFogServerStatus.response_time < mRemoteServerStatus.response_time;
+            useRemote = !useFog;
+
+            Toast.makeText(getApplicationContext(),
+                    String.format("Selecting %s server based on response time...", useFog ? "Fog" : "Remote"),
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        if (useRemote) {
+            serverUrl = String.format("http://%s/login", mRemoteServerStatus.addr);
+        } else if (useFog) {
+            serverUrl = String.format("http://%s/login", mFogServerStatus.addr);
+        } else {
+            // No available server!
+            serverUrl = "";
+            Toast.makeText(getApplicationContext(), "Error! No available server.", Toast.LENGTH_SHORT).show();
+            cancel = true;
+        }
+
         if (cancel) {
             // There was an error; don't attempt login and focus the first
             // form field with an error.
@@ -201,9 +258,6 @@ public class LoginActivity extends AppCompatActivity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-
-            String serverUrl = "http://10.252.136.174:8080/login";
-            String signalFilePath = Environment.getExternalStorageDirectory() + File.separator + "S001R03_22.txt";
 
             mAuthTask = new UserLoginTask(username, serverUrl, signalFilePath);
             mAuthTask.execute((Void) null);
@@ -414,6 +468,136 @@ public class LoginActivity extends AppCompatActivity {
             return true;
         }
 
+    }
+
+    /**
+     * Represents an asynchronous task to test a server's availabiltiy.
+     */
+    public class ServerTestTask extends AsyncTask<Void, Void, Boolean> {
+
+        /*
+         * Constructor
+         */
+        ServerTestTask() {
+        }
+
+        /*
+         * Main background task
+         */
+        @Override
+        protected Boolean doInBackground(Void... params) {
+
+            long time_start, time_end;
+
+            // Test Remote Server
+            if (mRemoteServerStatus.active) {
+                try {
+                    time_start = System.currentTimeMillis();
+                    if (testServer(String.format("http://%s", mRemoteServerStatus.addr))) {
+                        time_end = System.currentTimeMillis();
+                        mRemoteServerStatus.request_successful = true;
+                        mRemoteServerStatus.response_time = time_end - time_start;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // Test Fog Server
+            if (mFogServerStatus.active) {
+                try {
+                    time_start = System.currentTimeMillis();
+                    if (testServer(String.format("http://%s", mFogServerStatus.addr))) {
+                        time_end = System.currentTimeMillis();
+                        mFogServerStatus.request_successful = true;
+                        mFogServerStatus.response_time = time_end - time_start;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            return true;
+        }
+
+        /*
+         * Request has finished (may not be successful)
+         */
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            StringBuilder serverStatusViewText = new StringBuilder();
+
+            serverStatusViewText.append("Remote Server: ");
+            if (mRemoteServerStatus.active) {
+                if (mRemoteServerStatus.request_successful) {
+                    serverStatusViewText.append(String.format(" OK (Response Time: %d ms)\n", mRemoteServerStatus.response_time));
+                } else {
+                    serverStatusViewText.append("Failed to connect!\n");
+                }
+            } else {
+                serverStatusViewText.append("[Deactivated]\n");
+            }
+
+            serverStatusViewText.append("Fog Server: ");
+            if (mFogServerStatus.active) {
+                if (mFogServerStatus.request_successful) {
+                    serverStatusViewText.append(String.format(" OK (Response Time: %d ms)", mFogServerStatus.response_time));
+                } else {
+                    serverStatusViewText.append("Failed to connect!");
+                }
+            } else {
+                serverStatusViewText.append("[Deactivated]");
+            }
+
+            mServerStatusView.setText(serverStatusViewText.toString());
+        }
+
+        @Override
+        protected void onCancelled() {
+        }
+
+        //Handle SSL and HTTP connection
+        private HttpURLConnection returnHttpSSLConn(String Url) throws Exception {
+            // How to use SSL and X509TrustManager
+            //Reference: https://www.programcreek.com/java-api-examples/javax.net.ssl.X509TrustManager
+            //Reference: http://pankajmalhotra.com/Skip-SSL-HostName-Verification-Java-HttpsURLConnection
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                public boolean verify(String hostname, SSLSession session) { return true; }
+            });
+
+            SSLContext sslctxt = null;
+            sslctxt = SSLContext.getInstance("TLS");
+            //Reference: http://www.javased.com/index.php?api=java.security.cert.X509Certificate
+            //Reference: Follow the naming of parameters
+            sslctxt.init(null, new X509TrustManager[]{new X509TrustManager() {
+                public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+                public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+            }}, new SecureRandom());
+
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslctxt.getSocketFactory());
+            return (HttpURLConnection) new URL(Url).openConnection();
+        }
+
+        private boolean testServer(String serverUrl) throws Exception {
+            Log.d(TAG, "doTest()");
+            HttpURLConnection conn = returnHttpSSLConn(serverUrl);
+            final int connectTimeout = 5000;
+            final int readTimeout = 50000;
+            conn.setConnectTimeout(connectTimeout);
+            conn.setReadTimeout(readTimeout);
+            conn.setUseCaches(false);
+            conn.setDoInput(true);
+            conn.setRequestProperty("Connection", "Keep-Alive");
+            conn.setRequestProperty("Cache-Control", "no-cache");
+            final int status = conn.getResponseCode();
+            if (status != HttpURLConnection.HTTP_OK) {
+                Log.e(TAG, "Failed with http status: " + status);
+                return false;
+            }
+            Log.e(TAG, "Request successful!!!");
+            return true;
+        }
     }
 }
 
