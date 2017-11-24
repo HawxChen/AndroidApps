@@ -34,6 +34,8 @@ public class SDSQLiteHelper {
     public SDSQLiteHelper()
     {
 
+
+
         File   DB_FILE      = Environment.getExternalStorageDirectory();
         String DB_FILE_PATH = DB_FILE.getAbsolutePath() + File.separator + "CSE535_ASSIGNMENT2";
         db_path = DB_FILE_PATH + File.separator + DB_NAME;
