@@ -65,11 +65,12 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
 
         mStartButton = (Button) findViewById(R.id.startButton);
         mStartButton.setOnClickListener(this);
-        mActivityGroup = (RadioGroup) findViewById(R.id.activtiyGroup);
+
+//        mActivityGroup = (RadioGroup) findViewById(R.id.activtiyGroup);
         mAccelerometerLiveData = (TextView) findViewById(R.id.accelerometerLiveData);
-        mWalkingActivityCount = (TextView) findViewById(R.id.walkingActivityCount);
-        mRunningActivityCount = (TextView) findViewById(R.id.runningActivityCount);
-        mJumpingActivityCount = (TextView) findViewById(R.id.jumpingActivityCount);
+//        mWalkingActivityCount = (TextView) findViewById(R.id.walkingActivityCount);
+//        mRunningActivityCount = (TextView) findViewById(R.id.runningActivityCount);
+//        mJumpingActivityCount = (TextView) findViewById(R.id.jumpingActivityCount);
 
         mSensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
         mIsAccelerometerRegistered = false;
@@ -90,6 +91,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
             // Show the Up button in the action bar.
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
+            actionBar.setTitle("Training");
         }
     }
 
@@ -97,9 +99,9 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     // Helper method to enable or disable all of the activity options
     //
     private void setRadioGroupEnabled(Boolean enabled) {
-        ((RadioButton)(findViewById(R.id.walkingActivity))).setEnabled(enabled);
-        ((RadioButton)(findViewById(R.id.runningActivity))).setEnabled(enabled);
-        ((RadioButton)(findViewById(R.id.jumpingActivity))).setEnabled(enabled);
+//        ((RadioButton)(findViewById(R.id.walkingActivity))).setEnabled(enabled);
+//        ((RadioButton)(findViewById(R.id.runningActivity))).setEnabled(enabled);
+//        ((RadioButton)(findViewById(R.id.jumpingActivity))).setEnabled(enabled);
     }
 
     //
@@ -108,13 +110,14 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     private void start() {
         mStartButton.setText("Stop");
         mIsRunning = true;
-        setRadioGroupEnabled(false);
-        switch (mActivityGroup.getCheckedRadioButtonId()) {
-            case R.id.walkingActivity: mActivity = ActivityType.ACTIVITY_WALKING; break;
-            case R.id.runningActivity: mActivity = ActivityType.ACTIVITY_RUNNING; break;
-            case R.id.jumpingActivity: mActivity = ActivityType.ACTIVITY_JUMPING; break;
-            default:                   mActivity = ActivityType.ACTIVITY_UNKNOWN; break;
-        }
+        mActivity = ActivityType.ACTIVITY_RUNNING;
+//        setRadioGroupEnabled(false);
+//        switch (mActivityGroup.getCheckedRadioButtonId()) {
+//            case R.id.walkingActivity: mActivity = ActivityType.ACTIVITY_WALKING; break;
+//            case R.id.runningActivity: mActivity = ActivityType.ACTIVITY_RUNNING; break;
+//            case R.id.jumpingActivity: mActivity = ActivityType.ACTIVITY_JUMPING; break;
+//            default:                   mActivity = ActivityType.ACTIVITY_UNKNOWN; break;
+//        }
         mCountDownTimer = new CountDownTimer(5000, 1000) {
             public void onTick(long millisUntilFinished) {
                 mAccelerometerLiveData.setText(String.format("Please begin activity!\n\nRecording starting in %d...", millisUntilFinished / 1000 + 1));
@@ -149,7 +152,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         mIsRunning = false;
         mStartButton.setText("Start");
         mAccelerometerLiveData.setText("Press \"Start\" button to begin collecting samples.");
-        setRadioGroupEnabled(true);
+//        setRadioGroupEnabled(true);
     }
 
     //
@@ -185,15 +188,15 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         switch (mActivity) {
             case ACTIVITY_WALKING:
                 mWalkingSamples.add(new AccelerometerSample(x, y, z));
-                mWalkingActivityCount.setText(String.format("%d", mWalkingSamples.size()));
+//                mWalkingActivityCount.setText(String.format("%d", mWalkingSamples.size()));
                 break;
             case ACTIVITY_RUNNING:
                 mRunningSamples.add(new AccelerometerSample(x, y, z));
-                mRunningActivityCount.setText(String.format("%d", mRunningSamples.size()));
+//                mRunningActivityCount.setText(String.format("%d", mRunningSamples.size()));
                 break;
             case ACTIVITY_JUMPING:
                 mJumpingSamples.add(new AccelerometerSample(x, y, z));
-                mJumpingActivityCount.setText(String.format("%d", mJumpingSamples.size()));
+//                mJumpingActivityCount.setText(String.format("%d", mJumpingSamples.size()));
                 break;
         }
 
