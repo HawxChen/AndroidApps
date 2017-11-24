@@ -23,13 +23,9 @@ enum ActivityType {
 };
 
 class AccelerometerSample {
-    ActivityType activity;
-    float        x;
-    float        y;
-    float        z;
+    float x, y, z;
 
-    public AccelerometerSample(ActivityType activity, float x, float y, float z) {
-        this.activity = activity;
+    public AccelerometerSample(float x, float y, float z) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -56,10 +52,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private CountDownTimer mCountDownTimer;
 
     // Sample database
-    private ArrayList<AccelerometerSample> mSamples;
-    private int                            mWalkingSamplesCollected;
-    private int                            mRunningSamplesCollected;
-    private int                            mJumpingSamplesCollected;
+    private ArrayList<AccelerometerSample> mWalkingSamples;
+    private ArrayList<AccelerometerSample> mRunningSamples;
+    private ArrayList<AccelerometerSample> mJumpingSamples;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,11 +72,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
         mIsAccelerometerRegistered = false;
 
-        mSamples = new ArrayList<AccelerometerSample>();
-
-        mWalkingSamplesCollected = 0;
-        mRunningSamplesCollected = 0;
-        mJumpingSamplesCollected = 0;
+        mWalkingSamples = new ArrayList<AccelerometerSample>();
+        mRunningSamples = new ArrayList<AccelerometerSample>();
+        mJumpingSamples = new ArrayList<AccelerometerSample>();
 
         stop();
     }
@@ -170,30 +163,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() != Sensor.TYPE_ACCELEROMETER) return;
+
         float x = sensorEvent.values[0];
         float y = sensorEvent.values[1];
         float z = sensorEvent.values[2];
 
-        mSamples.add(new AccelerometerSample(mActivity, x, y, z));
-
-        String activityText;
         switch (mActivity) {
             case ACTIVITY_WALKING:
-                activityText = "Walking";
-                mWalkingActivityCount.setText(String.format("%d", ++mWalkingSamplesCollected));
+                mWalkingSamples.add(new AccelerometerSample(x, y, z));
+                mWalkingActivityCount.setText(String.format("%d", mWalkingSamples.size()));
                 break;
             case ACTIVITY_RUNNING:
-                activityText = "Running";
-                mRunningActivityCount.setText(String.format("%d", ++mRunningSamplesCollected));
+                mRunningSamples.add(new AccelerometerSample(x, y, z));
+                mRunningActivityCount.setText(String.format("%d", mRunningSamples.size()));
                 break;
             case ACTIVITY_JUMPING:
-                activityText = "Jumping";
-                mJumpingActivityCount.setText(String.format("%d", ++mJumpingSamplesCollected));
+                mJumpingSamples.add(new AccelerometerSample(x, y, z));
+                mJumpingActivityCount.setText(String.format("%d", mJumpingSamples.size()));
                 break;
-            default: activityText = "Unknown"; break;
         }
-        mAccelerometerLiveData.setText(String.format("X: %f, Y: %f; Z: %f", x, y, z));
 
+        mAccelerometerLiveData.setText(String.format("X: %f, Y: %f; Z: %f", x, y, z));
     }
 
     @Override
