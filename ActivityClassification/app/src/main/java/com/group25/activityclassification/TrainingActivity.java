@@ -253,7 +253,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         }
 
         // Update accelerometer live text view
-        mAccelerometerLiveData.setText(String.format("X: %f, Y: %f; Z: %f", x, y, z));
+        mAccelerometerLiveData.setText(String.format("X: %f, Y: %f, Z: %f", x, y, z));
     }
 
     @Override
