@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView       mModelInfoTextView;
     private EditText       mCostEditText;
     private EditText       mGammaEditText;
+    private EditText       mFoldsEditText;
     private Button         mStartButton;
 
     // State tracking
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int            mPredictionInterval;
     private float          mCost;
     private float          mGamma;
+    private int            mK;
 
     private Classifier                     mClassifier;
     private ArrayList<AccelerometerSample> mActivitySamples;
@@ -70,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mModelInfoTextView     = (TextView) findViewById(R.id.modelInfoTextView);
         mCostEditText          = (EditText) findViewById(R.id.costEditText);
         mGammaEditText         = (EditText) findViewById(R.id.gammaEditText);
+        mFoldsEditText         = (EditText) findViewById(R.id.foldsEditText);
         mStartButton           = (Button)   findViewById(R.id.startButton);
         mActivityTextView      = (TextView) findViewById(R.id.activityTextView);
         mTimerTextView         = (TextView) findViewById(R.id.timerTextView);
@@ -259,6 +262,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         stop();
         mCost = Float.valueOf(mCostEditText.getText().toString()).floatValue();
         mGamma = Float.valueOf(mGammaEditText.getText().toString()).floatValue();
+        mK = Integer.valueOf(mFoldsEditText.getText().toString()).intValue();
         SvmTrainerTask trainer = new SvmTrainerTask();
         trainer.execute();
     }
@@ -290,7 +294,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             // Begin training
-            int result = mClassifier.train(activities, mCost, mGamma);
+            int result = mClassifier.train(activities, mK, mCost, mGamma);
 
             if (result != 0) {
                 mErrorMessage = mClassifier.mErrorMessage;

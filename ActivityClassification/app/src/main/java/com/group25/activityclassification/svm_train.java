@@ -97,7 +97,10 @@ class svm_train {
 	
 	public int run(String argv[]) throws IOException
 	{
-		parse_command_line(argv);
+		int result = parse_command_line(argv);
+		if (result != 0) {
+			return 1;
+		}
 		read_problem();
 		error_msg = svm.svm_check_parameter(prob,param);
 
@@ -142,7 +145,7 @@ class svm_train {
 		return Integer.parseInt(s);
 	}
 
-	private void parse_command_line(String argv[])
+	private int parse_command_line(String argv[])
 	{
 		int i;
 		svm_print_interface print_func = null;	// default printing to stdout
@@ -219,8 +222,8 @@ class svm_train {
 					nr_fold = atoi(argv[i]);
 					if(nr_fold < 2)
 					{
-						System.err.print("n-fold cross validation: n must >= 2\n");
-						exit_with_help();
+						error_msg = "k-fold cross validation: k must >= 2";
+						return 1;
 					}
 					break;
 				case 'w':
@@ -241,8 +244,8 @@ class svm_train {
 					param.weight[param.nr_weight-1] = atof(argv[i]);
 					break;
 				default:
-					System.err.print("Unknown option: " + argv[i-1] + "\n");
-					exit_with_help();
+					error_msg = "Unknown option: " + argv[i-1];
+					return 1;
 			}
 		}
 
@@ -263,6 +266,8 @@ class svm_train {
 			++p;	// whew...
 			model_file_name = argv[i].substring(p)+".model";
 		}
+
+		return 0;
 	}
 
 	// read in a problem (in svmlight format)

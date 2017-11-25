@@ -71,6 +71,25 @@
                 android:inputType="numberDecimal"
                 android:text="0.125" />
 
+            <TextView
+                android:id="@+id/textView11"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="fill_horizontal"
+                android:layout_weight="1"
+                android:paddingRight="16dp"
+                android:text="K (Cross Validation)" />
+
+            <EditText
+                android:id="@+id/foldsEditText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="fill_horizontal"
+                android:layout_weight="0"
+                android:ems="10"
+                android:inputType="number"
+                android:text="4" />
+
         </GridLayout>
 
 

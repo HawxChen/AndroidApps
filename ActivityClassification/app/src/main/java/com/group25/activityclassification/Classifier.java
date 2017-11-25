@@ -79,7 +79,7 @@ class Classifier {
         }
     }
 
-    public int train(ArrayList<UserActivity> activities, float cost, float gamma) {
+    public int train(ArrayList<UserActivity> activities, int k, float cost, float gamma) {
 
         Log.d("CLASSIFIER", String.format("Starting training (cost=%f, gamma=%f)", cost, gamma));
         mErrorMessage = "";
@@ -99,7 +99,7 @@ class Classifier {
             String[] argv = new String[8];
             argv[0] = "-c"; argv[1] = String.format("%f", cost);
             argv[2] = "-g"; argv[3] = String.format("%f", gamma);
-            argv[4] = "-v"; argv[5] = "4";
+            argv[4] = "-v"; argv[5] = String.format("%d", k);
             argv[6] = inputFile.getPath();
             argv[7] = modelPath;
 
