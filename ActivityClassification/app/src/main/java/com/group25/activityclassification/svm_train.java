@@ -10,11 +10,11 @@ class svm_train {
 	private svm_model model;
 	private String input_file_name;		// set by parse_command_line
 	private String model_file_name;		// set by parse_command_line
-	private String error_msg;
+	public String error_msg;
 	private int cross_validation;
 	private int nr_fold;
 
-	public static float cross_validation_result;
+	public float cross_validation_result;
 
 	private static svm_print_interface svm_print_null = new svm_print_interface()
 	{
@@ -95,7 +95,7 @@ class svm_train {
 		cross_validation_result = 100.0f*total_correct/prob.l;
 	}
 	
-	private void run(String argv[]) throws IOException
+	public int run(String argv[]) throws IOException
 	{
 		parse_command_line(argv);
 		read_problem();
@@ -104,7 +104,7 @@ class svm_train {
 		if(error_msg != null)
 		{
 			System.err.print("ERROR: "+error_msg+"\n");
-			System.exit(1);
+			return 1;
 		}
 
 		if(cross_validation != 0)
@@ -116,6 +116,8 @@ class svm_train {
 			model = svm.svm_train(prob,param);
 			svm.svm_save_model(model_file_name,model);
 		//}
+
+		return 0;
 	}
 
 	public static void main(String argv[]) throws IOException

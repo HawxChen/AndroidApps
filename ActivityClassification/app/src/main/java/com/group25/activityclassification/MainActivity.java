@@ -290,7 +290,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             // Begin training
-            mClassifier.train(activities, mCost, mGamma);
+            int result = mClassifier.train(activities, mCost, mGamma);
+
+            if (result != 0) {
+                mErrorMessage = mClassifier.mErrorMessage;
+                return false;
+            }
+
             return true;
         }
 
@@ -298,10 +304,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         protected void onPostExecute(Boolean result) {
             super.onPostExecute(result);
             if (!result) {
-                Toast.makeText(getApplicationContext(), mErrorMessage, Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), String.format("Error: %s", mErrorMessage), Toast.LENGTH_LONG).show();
                 return;
             } else {
-                mModelInfoTextView.setText(String.format("Cross Validation Accuracy: %f%%", svm_train.cross_validation_result));
+                mModelInfoTextView.setText(String.format("Cross Validation Accuracy: %f%%", mClassifier.mCrossValidationAccuracy));
                 mStartButton.setEnabled(true);
             }
         }

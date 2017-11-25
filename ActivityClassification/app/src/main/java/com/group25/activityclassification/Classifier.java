@@ -16,6 +16,8 @@ class Classifier {
     private String modelDir;
     private String modelName;
     private String modelPath;
+    public  String mErrorMessage;
+    public  float  mCrossValidationAccuracy;
 
     public Classifier() {
         // Path to model in the filesystem
@@ -77,9 +79,11 @@ class Classifier {
         }
     }
 
-    public void train(ArrayList<UserActivity> activities, float cost, float gamma) {
+    public int train(ArrayList<UserActivity> activities, float cost, float gamma) {
 
         Log.d("CLASSIFIER", String.format("Starting training (cost=%f, gamma=%f)", cost, gamma));
+        mErrorMessage = "";
+        mCrossValidationAccuracy = 0;
 
         try {
             // Write activity in libsvm format to a temp file
@@ -98,10 +102,16 @@ class Classifier {
             argv[4] = "-v"; argv[5] = "4";
             argv[6] = inputFile.getPath();
             argv[7] = modelPath;
-            svm_train.main(argv);
+
+            svm_train trainer = new svm_train();
+            int result = trainer.run(argv);
+            mErrorMessage = trainer.error_msg;
+            mCrossValidationAccuracy = trainer.cross_validation_result;
+            return result;
 
         } catch (IOException e) {
             e.printStackTrace();
+            return 1;
         }
     }
 }
