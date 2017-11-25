@@ -1,6 +1,7 @@
 package com.group25.activityclassification;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -10,6 +11,7 @@ import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
@@ -61,8 +64,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         setupActionBar();
+
+        if (!isExternalStorageWritable()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("External storage is not writable! Please check permissions.");
+            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    finish();
+                }
+            });
+            builder.show();
+            return;
+        }
+
+        setContentView(R.layout.activity_main);
 
         // Setup buttons
         ((Button)findViewById(R.id.trainingDataButton)).setOnClickListener(this);
@@ -91,7 +108,62 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mClassifier.destroyModel();
         }
 
+        // Load default training data if necessary
+        loadDefaultTrainingData();
+
         stop();
+    }
+
+    //
+    // Make sure we have the necessary storage permissions
+    // https://developer.android.com/guide/topics/data/data-storage.html#filesExternal
+    //
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
+    //
+    // Load pre-recorded training data
+    //
+    private void loadDefaultTrainingData() {
+        DatabaseHelper dbHelper = new DatabaseHelper();
+
+        if (dbHelper.exists()) {
+            // Already have a database file
+            return;
+        }
+
+        String dst = dbHelper.getDbPath();
+
+        // Make sure directories exist
+        new File(dbHelper.getDbDir()).mkdirs();
+        
+        // https://stackoverflow.com/questions/4081763/access-resource-files-in-android
+        InputStream in = getResources().openRawResource(R.raw.default_training_data);
+
+        // https://stackoverflow.com/questions/9292954/how-to-make-a-copy-of-a-file-in-android
+        try {
+            try {
+                FileOutputStream out = new FileOutputStream(dst);
+                try {
+                    // Transfer bytes from in to out
+                    byte[] buf = new byte[1024];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                } finally {
+                    out.close();
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } finally {
+                in.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -126,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void setupActionBar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setTitle("Activity Classifier");
+            actionBar.setTitle("CSE535,G25,A3: Activity Classifier");
         }
     }
 

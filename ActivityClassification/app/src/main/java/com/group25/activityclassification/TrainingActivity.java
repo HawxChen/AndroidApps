@@ -80,50 +80,16 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         mCountdownInterval = 5;
         mCollectionInterval = 105; // 20*5 + 5 seconds
 
-        //----------------
-
-        boolean mExternalStorageAvailable = false;
-        boolean mExternalStorageWriteable = false;
-        String state = Environment.getExternalStorageState();
-
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            // We can read and write the media
-            mExternalStorageAvailable = mExternalStorageWriteable = true;
-        } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            // We can only read the media
-            mExternalStorageAvailable = true;
-            mExternalStorageWriteable = false;
-        } else {
-            // Something else is wrong. It may be one of many other states, but all we need
-            //  to know is we can neither read nor write
-            mExternalStorageAvailable = mExternalStorageWriteable = false;
-        }
-
-        if (mExternalStorageAvailable) {
-            Log.d(TAG, "EXTERNAL STORAGE AVAILABLE");
-        } else {
-            Log.d(TAG, "EXTERNAL STORAGE NOT! AVAILABLE");
-        }
-
-        if (mExternalStorageWriteable) {
-            Log.d(TAG, "EXTERNAL STORAGE WRITEABLE");
-        } else {
-            Log.d(TAG, "EXTERNAL STORAGE NOT! WRITEABLE");
-        }
-
-        //----------------
-
         mDb = new DatabaseHelper();
 
         if (mDb.exists()) {
             // DB already exists? Want to run training on existing data?
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage("Training data already exists! Would you like to delete the training data and re-train the model?");
+            builder.setMessage("Training database already exists! Would you like to DELETE the existing training data and collect new data?");
             builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     // Delete existing training data and re-train
-                    stop();
                 }
             });
             builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -136,9 +102,9 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
                 }
             });
             builder.show();
-        } else {
-            stop();
         }
+
+        stop();
     }
 
     /**

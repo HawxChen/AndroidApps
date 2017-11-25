@@ -82,6 +82,20 @@ class DatabaseHelper {
     }
 
     //
+    // Get DB directory
+    //
+    public String getDbDir() {
+        return dbDir;
+    }
+
+    //
+    // Get DB path
+    //
+    public String getDbPath() {
+        return dbPath;
+    }
+
+    //
     // Check to see if the database already exists
     //
     public Boolean exists() {
