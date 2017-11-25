@@ -209,7 +209,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mIsRunning = true;
         mStartButton.setVisibility(View.GONE);
         mActivityTextView.setVisibility(View.VISIBLE);
-        Log.d("TEST", mCostEditText.getText().toString());
         startActivityRecording();
     }
 
