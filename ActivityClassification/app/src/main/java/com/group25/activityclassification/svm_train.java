@@ -1,3 +1,5 @@
+package com.group25.activityclassification;
+
 import libsvm.*;
 import java.io.*;
 import java.util.*;
