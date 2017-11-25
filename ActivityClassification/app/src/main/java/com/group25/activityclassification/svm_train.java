@@ -14,6 +14,8 @@ class svm_train {
 	private int cross_validation;
 	private int nr_fold;
 
+	public static float cross_validation_result;
+
 	private static svm_print_interface svm_print_null = new svm_print_interface()
 	{
 		public void print(String s) {}
@@ -89,6 +91,8 @@ class svm_train {
 					++total_correct;
 			System.out.print("Cross Validation Accuracy = "+100.0*total_correct/prob.l+"%\n");
 		}
+
+		cross_validation_result = 100.0f*total_correct/prob.l;
 	}
 	
 	private void run(String argv[]) throws IOException

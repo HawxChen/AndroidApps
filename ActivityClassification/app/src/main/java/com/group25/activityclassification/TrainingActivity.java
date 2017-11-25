@@ -1,11 +1,10 @@
 package com.group25.activityclassification;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.hardware.Sensor;
@@ -15,147 +14,18 @@ import android.hardware.SensorManager;
 import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Environment;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.StringBuilderPrinter;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-
-enum ActivityType {
-    ACTIVITY_WALKING,
-    ACTIVITY_RUNNING,
-    ACTIVITY_JUMPING,
-    ACTIVITY_UNKNOWN
-};
-
-class AccelerometerSample {
-    float x, y, z;
-
-    public AccelerometerSample(float x, float y, float z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-}
-
-class DatabaseHelper {
-
-    private static final String TAG = "DatabaseHelper";
-
-    private SQLiteDatabase db;
-    private String         dbDir;
-    private String         dbName;
-    private String         dbPath;
-
-    //
-    // Open the database for writing
-    //
-    public DatabaseHelper() {
-        // Path to database in the filesystem
-        dbDir = Environment.getExternalStorageDirectory().getPath() + File.separator + "Cse535_Group25";
-        dbName = "A3.db";
-        dbPath = dbDir + File.separator + dbName;
-    }
-
-    //
-    // Check to see if the database already exists
-    //
-    public Boolean exists() {
-        return (new File(dbPath)).exists();
-    }
-
-    //
-    // Init the database
-    //
-    public void initDatabase() {
-        // Delete database if it exists
-        File f = new File(dbPath);
-        if (f.exists()) {
-            f.delete();
-        }
-
-        try
-        {
-            // Open the database (create if it does not exist)
-            Log.e(TAG,"Database path: " + dbPath);
-            new File(dbDir).mkdirs(); // Make sure parent directories exist!
-            db = SQLiteDatabase.openOrCreateDatabase(dbPath, null);
-            if (db == null) {
-                Log.e(TAG, "openOrCreateDatabase returned null!");
-            } else {
-                Log.e(TAG, "Successfully opened database");
-            }
-            createTable();
-        }
-        catch (SQLiteException ex)
-        {
-            Log.e(TAG, "error -- " + ex.getMessage(), ex);
-        }
-    }
-
-    //
-    // Create samples table in database
-    //
-    public void createTable() {
-        // Based on assignment specification, the DB schema is as follows:
-        //
-        // +----+-------+-------+-------+-----+--------+--------+--------+----------+
-        // | ID | Accel | Accel | Accel | ... | Accel  | Accel  | Accel  | Activity |
-        // |    | X 1st | Y 1st | Z 1st | ... | X 50th | Y 50th | Z 50th | Label    |
-        // +----+-------+-------+-------+-----+--------+--------+--------+----------+
-
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("CREATE TABLE IF NOT EXISTS `samples` (" +
-                                "`ID` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, ");
-        for (int i = 1; i <= 50; i++) {
-            queryBuilder.append(String.format("`ACCEL%d_X` REAL NOT NULL, " +
-                                              "`ACCEL%d_Y` REAL NOT NULL, " +
-                                              "`ACCEL%d_Z` REAL NOT NULL, ", i, i, i));
-
-        }
-        queryBuilder.append("`ACTIVITY`	TEXT NOT NULL)");
-        String query = queryBuilder.toString();
-
-        Log.e(TAG, "SQL Query: " + query);
-        db.beginTransaction();
-        db.execSQL(query);
-        db.setTransactionSuccessful();
-        db.endTransaction();
-    }
-
-    public String activityTypeToString(ActivityType activityType) {
-        switch (activityType) {
-            case ACTIVITY_WALKING: return "Walking";
-            case ACTIVITY_RUNNING: return "Running";
-            case ACTIVITY_JUMPING: return "Jumping";
-            default:               return "Unknown";
-        }
-    }
-
-    public void addRecordsToDatabase(ActivityType activityType, ArrayList<AccelerometerSample> samples) {
-        ContentValues cv = new ContentValues();
-        for(int i = 1; i <= 50; i++) {
-            AccelerometerSample sample = samples.get(i-1);
-            cv.put(String.format("ACCEL%d_X", i), sample.x);
-            cv.put(String.format("ACCEL%d_Y", i), sample.y);
-            cv.put(String.format("ACCEL%d_Z", i), sample.z);
-            cv.put("ACTIVITY", activityTypeToString(activityType));
-        }
-
-        db.beginTransaction();
-        db.insert("samples", null, cv);
-        db.setTransactionSuccessful();
-        db.endTransaction();
-    }
-}
 
 public class TrainingActivity extends AppCompatActivity implements View.OnClickListener, SensorEventListener {
 
@@ -174,8 +44,8 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     private ActivityType   mActivity;
     private CountDownTimer mCountDownTimer;
     private CountDownTimer mActivityTimer;
-    private int            countdownInterval;
-    private int            collectionInterval;
+    private int            mCountdownInterval;
+    private int            mCollectionInterval;
     private int            mState;
 
     // Database
@@ -207,8 +77,8 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         mJumpingSamples = new ArrayList<AccelerometerSample>();
 
         mState = 0;
-        countdownInterval = 5;
-        collectionInterval = 105; // 20*5 + 5 seconds
+        mCountdownInterval = 5;
+        mCollectionInterval = 105; // 20*5 + 5 seconds
 
         //----------------
 
@@ -253,7 +123,6 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     // Delete existing training data and re-train
-                    mDb.initDatabase();
                     stop();
                 }
             });
@@ -268,7 +137,6 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
             });
             builder.show();
         } else {
-            mDb.initDatabase();
             stop();
         }
     }
@@ -370,35 +238,6 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         startActivityRecording();
     }
 
-    private void trainSvmModel() {
-        mAccelerometerLiveData.setText("Training SVM...");
-
-        // Save 3 (XYZ) * 50 (5 sec, 10Hz) * 20 (collections) * 3 (activities) samples total to database
-        ArrayList<UserActivity> activities = new ArrayList<UserActivity>();
-
-        for (int i = 0; i < 20; i++) {
-            int from = i*50;
-            int to = (i+1)*50;
-            activities.add(new UserActivity(
-                new ArrayList<AccelerometerSample>(
-                    mWalkingSamples.subList(from, to)),
-                ActivityType.ACTIVITY_WALKING));
-            activities.add(new UserActivity(
-                new ArrayList<AccelerometerSample>(
-                    mRunningSamples.subList(from, to)),
-                ActivityType.ACTIVITY_RUNNING));
-            activities.add(new UserActivity(
-                new ArrayList<AccelerometerSample>(
-                    mWalkingSamples.subList(from, to)),
-                ActivityType.ACTIVITY_JUMPING));
-        }
-
-        Classifier classifier = new Classifier();
-        classifier.train(activities);
-
-        mAccelerometerLiveData.setText("Complete! Press back to return to main activity.");
-    }
-
     //
     // Start sampling
     //
@@ -406,7 +245,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         mAccelerometerLiveData.setText("Please begin activity!");
 
         // Create a countdown timer to time activity recording
-        mActivityTimer = new CountDownTimer(collectionInterval * 1000, 1000) {
+        mActivityTimer = new CountDownTimer(mCollectionInterval * 1000, 1000) {
             public void onTick(long millisUntilFinished) {
                 mTimerTextView.setText(String.format("%d seconds remaining", millisUntilFinished / 1000 + 1));
             }
@@ -422,7 +261,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         };
 
         // Create a countdown timer to allow the user to begin activity
-        mCountDownTimer = new CountDownTimer(countdownInterval * 1000, 1000) {
+        mCountDownTimer = new CountDownTimer(mCountdownInterval * 1000, 1000) {
             public void onTick(long millisUntilFinished) {
                 mTimerTextView.setText(String.format("Recording starting in %d", millisUntilFinished / 1000 + 1));
             }
@@ -504,8 +343,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
 
         @Override
         protected Void doInBackground(Void... voids) {
-            //    publishProgress((int) ((i / (float) count) * 100));
-            //    if (isCancelled()) break;
+            mDb.reinitDatabase();
 
             // Save 3 (XYZ) * 50 (5 sec, 10Hz) * 20 (collections) * 3 (activities) samples total to database
             for (int i = 0; i < 20; i++) {
@@ -526,7 +364,6 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             mAccelerometerLiveData.setText("Database created!");
-            trainSvmModel();
         }
     }
 }

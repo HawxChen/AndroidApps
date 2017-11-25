@@ -6,6 +6,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.v7.app.ActionBar;
@@ -14,7 +15,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -24,127 +27,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-
-class UserActivity {
-    private ArrayList<AccelerometerSample> mSamples;
-    private ActivityType                   mActivityType;
-
-    public UserActivity(ArrayList<AccelerometerSample> samples) {
-        mSamples      = samples;
-        mActivityType = ActivityType.ACTIVITY_UNKNOWN;
-    }
-
-    public UserActivity(ArrayList<AccelerometerSample> samples, ActivityType activityType) {
-        mSamples      = samples;
-        mActivityType = activityType;
-    }
-
-    public String getSvmFormat() {
-        StringBuilder stringBuilder = new StringBuilder();
-        int classifierId;
-        switch (mActivityType) {
-            case ACTIVITY_WALKING: classifierId = -1; break;
-            case ACTIVITY_RUNNING: classifierId =  0; break;
-            case ACTIVITY_JUMPING: classifierId =  1; break;
-            default: classifierId = -1; break; // Default to walking
-        }
-        stringBuilder.append(String.format("%d ", classifierId));
-        for (int i = 0; i < 50; i++) {
-            AccelerometerSample sample = mSamples.get(i);
-            stringBuilder.append(String.format("%d:%f ", i*3+1, sample.x/10.0));
-            stringBuilder.append(String.format("%d:%f ", i*3+2, sample.y/10.0));
-            stringBuilder.append(String.format("%d:%f ", i*3+3, sample.z/10.0));
-        }
-        stringBuilder.append("\n");
-        return stringBuilder.toString();
-    }
-}
-
-class Classifier {
-
-    private String modelDir;
-    private String modelName;
-    private String modelPath;
-
-    public Classifier() {
-        // Path to model in the filesystem
-        modelDir = Environment.getExternalStorageDirectory().getPath() + File.separator + "Cse535_Group25";
-        modelName = "model";
-        modelPath = modelDir + File.separator + modelName;
-    }
-
-    public Boolean isModelAvailable() {
-        return (new File(modelPath)).exists();
-    }
-
-    public ActivityType classifyActivity(UserActivity activity) {
-        try {
-            // Write activity in libsvm format to a temp file
-            File inputFile = new File(modelDir, "input");
-            FileOutputStream fout = new FileOutputStream(inputFile);
-            PrintWriter p = new PrintWriter(fout);
-            p.write(activity.getSvmFormat());
-            p.close();
-
-            // Run svm_predict on the model + input file
-            File outputFile = new File(modelDir, "output");
-            String[] argv = new String[3];
-            argv[0] = inputFile.getPath();
-            argv[1] = modelPath;
-            argv[2] = outputFile.getPath();
-
-            // Read output file to get activity type
-            svm_predict.main(argv);
-            BufferedReader br = new BufferedReader(new FileReader(outputFile));
-            String line = br.readLine();
-
-            if (line == null) {
-                return ActivityType.ACTIVITY_UNKNOWN;
-            }
-
-            int activityId = (int)Float.parseFloat(line);
-
-            br.close();
-
-            switch (activityId) {
-                case -1: return ActivityType.ACTIVITY_WALKING;
-                case  0: return ActivityType.ACTIVITY_RUNNING;
-                case  1: return ActivityType.ACTIVITY_JUMPING;
-                default: return ActivityType.ACTIVITY_UNKNOWN;
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ActivityType.ACTIVITY_UNKNOWN;
-        }
-    }
-
-    public void train(ArrayList<UserActivity> activities) {
-
-        try {
-            // Write activity in libsvm format to a temp file
-            File inputFile = new File(modelDir, "input");
-            FileOutputStream fout = new FileOutputStream(inputFile);
-            PrintWriter p = new PrintWriter(fout);
-            for (int i = 0; i < activities.size(); i++) {
-                p.write(activities.get(i).getSvmFormat());
-            }
-            p.close();
-
-            // Run svm_train on the training data (svm_train -c 2.0 -g 0.125 -v 4 input model)
-            String[] argv = new String[8];
-            argv[0] = "-c"; argv[1] = "2.0";
-            argv[2] = "-g"; argv[3] = "0.125";
-            argv[4] = "-v"; argv[5] = "4";
-            argv[6] = inputFile.getPath();
-            argv[7] = modelPath;
-            svm_train.main(argv);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, SensorEventListener {
 
@@ -157,6 +39,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private SensorManager  mSensorMgr;
     private TextView       mActivityTextView;
     private TextView       mTimerTextView;
+    private TextView       mModelInfoTextView;
+    private EditText       mCostEditText;
+    private EditText       mGammaEditText;
+    private Button         mStartButton;
 
     // State tracking
     private Boolean        mIsRunning;
@@ -164,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ActivityType   mActivity;
     private CountDownTimer mTimer;
     private int            mPredictionInterval;
+    private float          mCost;
+    private float          mGamma;
 
     private Classifier                     mClassifier;
     private ArrayList<AccelerometerSample> mActivitySamples;
@@ -174,64 +62,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         setupActionBar();
 
+        // Setup buttons
+        ((Button)findViewById(R.id.trainingDataButton)).setOnClickListener(this);
         ((Button)findViewById(R.id.trainSvmButton)).setOnClickListener(this);
 
         // Get handles for views
-        mAccelerometerLiveData = (TextView) findViewById(R.id.accelerometerLiveData);
+        mModelInfoTextView     = (TextView) findViewById(R.id.modelInfoTextView);
+        mCostEditText          = (EditText) findViewById(R.id.costEditText);
+        mGammaEditText         = (EditText) findViewById(R.id.gammaEditText);
+        mStartButton           = (Button)   findViewById(R.id.startButton);
         mActivityTextView      = (TextView) findViewById(R.id.activityTextView);
         mTimerTextView         = (TextView) findViewById(R.id.timerTextView);
+        mAccelerometerLiveData = (TextView) findViewById(R.id.accelerometerLiveData);
 
-        mClassifier = new Classifier();
-        mSensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
+        mStartButton.setOnClickListener(this);
+
+        mClassifier                = new Classifier();
+        mSensorMgr                 = (SensorManager) getSystemService(SENSOR_SERVICE);
         mIsAccelerometerRegistered = false;
-        mActivitySamples = new ArrayList<AccelerometerSample>();
-        mPredictionInterval = 5;
+        mActivitySamples           = new ArrayList<AccelerometerSample>();
+        mPredictionInterval        = 5;
 
-        // TEMP
-//        try {
-//
-//            String modelDir = Environment.getExternalStorageDirectory().getPath() + File.separator + "Cse535_Group25";
-//            String modelName = "model";
-//            String modelPath = modelDir + File.separator + modelName;
-//            String inputPath = modelDir + File.separator + "input";
-//
-//            // Run svm_train on the training data (svm_train -c 2.0 -g 0.125 -v 4 input model)
-//            String[] argv = new String[8];
-//            argv[0] = "-c"; argv[1] = "2.0";
-//            argv[2] = "-g"; argv[3] = "0.125";
-//            argv[4] = "-v"; argv[5] = "4";
-//            argv[6] = inputPath;
-//            argv[7] = modelPath;
-//            for (int i = 0; i < 8; i++)
-//                Log.d(TAG, argv[i]);
-//            svm_train.main(argv);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return;
-
-        // END TEMP
-        checkForModelAndStart();
-    }
-
-    void checkForModelAndStart() {
+        // Destroy any existing models to force re-train
         if (mClassifier.isModelAvailable()) {
-            start();
-        } else {
-            mActivityTextView.setText("Unknown");
-            mTimerTextView.setText("");
-            mAccelerometerLiveData.setText("Model not available, please train!");
+            mClassifier.destroyModel();
         }
+
+        stop();
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.trainSvmButton:
+            case R.id.trainingDataButton:
                 stop();
                 Intent intent = new Intent(getBaseContext(), TrainingActivity.class);
                 startActivityForResult(intent, REQUEST_TRAINING_FINISHED);
+                break;
+            case R.id.trainSvmButton:
+                train();
+                break;
+            case R.id.startButton:
+                start();
                 break;
         }
     }
@@ -240,8 +112,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
             case REQUEST_TRAINING_FINISHED:
-                /* Training complete */
-                checkForModelAndStart();
+                // Reached here when we return from the Training Activity
                 break;
         }
     }
@@ -261,6 +132,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //
     private void start() {
         mIsRunning = true;
+        mStartButton.setVisibility(View.GONE);
+        mActivityTextView.setVisibility(View.VISIBLE);
+        Log.d("TEST", mCostEditText.getText().toString());
         startActivityRecording();
     }
 
@@ -274,9 +148,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         stopSampling();
         mIsRunning = false;
-        mAccelerometerLiveData.setText("");
+        mModelInfoTextView.setText("");
         mTimerTextView.setText("");
+        mStartButton.setEnabled(false);
+        mStartButton.setVisibility(View.VISIBLE);
         mActivityTextView.setText("");
+        mActivityTextView.setVisibility(View.GONE);
+        mAccelerometerLiveData.setText("");
     }
 
     //
@@ -375,5 +253,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
+    }
+
+    public void train() {
+        stop();
+        mCost = Float.valueOf(mCostEditText.getText().toString()).floatValue();
+        mGamma = Float.valueOf(mGammaEditText.getText().toString()).floatValue();
+        SvmTrainerTask trainer = new SvmTrainerTask();
+        trainer.execute();
+    }
+
+    //
+    // Simple async task to train the model in the background
+    //
+    private class SvmTrainerTask extends AsyncTask<Void, Void, Boolean> {
+
+        String mErrorMessage;
+
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            mErrorMessage = "";
+
+            // Get samples from database
+            DatabaseHelper db = new DatabaseHelper();
+            if (!db.exists()) {
+                mErrorMessage = "Cannot start training because database does not exist! Please collect training data before training.";
+                return false;
+            }
+            db.initDatabase();
+
+            ArrayList<UserActivity> activities = db.getActivitiesFromDatabase();
+
+            if (activities == null || activities.size() == 0) {
+                mErrorMessage = "No data in database! Please retry collecting training data.";
+                return false;
+            }
+
+            // Begin training
+            mClassifier.train(activities, mCost, mGamma);
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            super.onPostExecute(result);
+            if (!result) {
+                Toast.makeText(getApplicationContext(), mErrorMessage, Toast.LENGTH_LONG).show();
+                return;
+            } else {
+                mModelInfoTextView.setText(String.format("Cross Validation Accuracy: %f%%", svm_train.cross_validation_result));
+                mStartButton.setEnabled(true);
+            }
+        }
     }
 }
