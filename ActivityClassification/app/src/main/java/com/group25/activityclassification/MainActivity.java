@@ -41,7 +41,14 @@ class UserActivity {
 
     public String getSvmFormat() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(String.format("%d ", 0));
+        int classifierId;
+        switch (mActivityType) {
+            case ACTIVITY_WALKING: classifierId = -1; break;
+            case ACTIVITY_RUNNING: classifierId =  0; break;
+            case ACTIVITY_JUMPING: classifierId =  1; break;
+            default: classifierId = -1; break; // Default to walking
+        }
+        stringBuilder.append(String.format("%d ", classifierId));
         for (int i = 0; i < 50; i++) {
             AccelerometerSample sample = mSamples.get(i);
             stringBuilder.append(String.format("%d:%f ", i*3+1, sample.x/10.0));
@@ -77,7 +84,6 @@ class Classifier {
             FileOutputStream fout = new FileOutputStream(inputFile);
             PrintWriter p = new PrintWriter(fout);
             p.write(activity.getSvmFormat());
-            Log.d("CLASSIFIER", activity.getSvmFormat());
             p.close();
 
             // Run svm_predict on the model + input file
@@ -87,14 +93,10 @@ class Classifier {
             argv[1] = modelPath;
             argv[2] = outputFile.getPath();
 
-            Log.d("CLASSIFIER", String.format("%s %s %s", argv[0], argv[1], argv[2]));
-
             // Read output file to get activity type
             svm_predict.main(argv);
             BufferedReader br = new BufferedReader(new FileReader(outputFile));
             String line = br.readLine();
-
-            Log.d("CLASSIFIER", line);
 
             if (line == null) {
                 return ActivityType.ACTIVITY_UNKNOWN;
@@ -116,11 +118,39 @@ class Classifier {
             return ActivityType.ACTIVITY_UNKNOWN;
         }
     }
+
+    public void train(ArrayList<UserActivity> activities) {
+
+        try {
+            // Write activity in libsvm format to a temp file
+            File inputFile = new File(modelDir, "input");
+            FileOutputStream fout = new FileOutputStream(inputFile);
+            PrintWriter p = new PrintWriter(fout);
+            for (int i = 0; i < activities.size(); i++) {
+                p.write(activities.get(i).getSvmFormat());
+            }
+            p.close();
+
+            // Run svm_train on the training data (svm_train -c 2.0 -g 0.125 -v 4 input model)
+            String[] argv = new String[8];
+            argv[0] = "-c"; argv[1] = "2.0";
+            argv[2] = "-g"; argv[3] = "0.125";
+            argv[4] = "-v"; argv[5] = "4";
+            argv[6] = inputFile.getPath();
+            argv[7] = modelPath;
+            svm_train.main(argv);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, SensorEventListener {
 
     private static final String TAG = "MainActivity";
+
+    public final static int REQUEST_TRAINING_FINISHED = 2;
 
     // UI Elements
     private TextView       mAccelerometerLiveData;
@@ -157,6 +187,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mActivitySamples = new ArrayList<AccelerometerSample>();
         mPredictionInterval = 5;
 
+        // TEMP
+//        try {
+//
+//            String modelDir = Environment.getExternalStorageDirectory().getPath() + File.separator + "Cse535_Group25";
+//            String modelName = "model";
+//            String modelPath = modelDir + File.separator + modelName;
+//            String inputPath = modelDir + File.separator + "input";
+//
+//            // Run svm_train on the training data (svm_train -c 2.0 -g 0.125 -v 4 input model)
+//            String[] argv = new String[8];
+//            argv[0] = "-c"; argv[1] = "2.0";
+//            argv[2] = "-g"; argv[3] = "0.125";
+//            argv[4] = "-v"; argv[5] = "4";
+//            argv[6] = inputPath;
+//            argv[7] = modelPath;
+//            for (int i = 0; i < 8; i++)
+//                Log.d(TAG, argv[i]);
+//            svm_train.main(argv);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return;
+
+        // END TEMP
+        checkForModelAndStart();
+    }
+
+    void checkForModelAndStart() {
         if (mClassifier.isModelAvailable()) {
             start();
         } else {
@@ -170,8 +229,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.trainSvmButton:
+                stop();
                 Intent intent = new Intent(getBaseContext(), TrainingActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, REQUEST_TRAINING_FINISHED);
+                break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode) {
+            case REQUEST_TRAINING_FINISHED:
+                /* Training complete */
+                checkForModelAndStart();
                 break;
         }
     }

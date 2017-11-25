@@ -107,11 +107,11 @@ class svm_train {
 		{
 			do_cross_validation();
 		}
-		else
-		{
+		//else
+		//{
 			model = svm.svm_train(prob,param);
 			svm.svm_save_model(model_file_name,model);
-		}
+		//}
 	}
 
 	public static void main(String argv[]) throws IOException

@@ -19,7 +19,7 @@
         android:id="@+id/trainSvmButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start"
+        android:text="Train SVM Model"
         tools:layout_editor_absoluteX="8dp"
         tools:layout_editor_absoluteY="447dp" />
 

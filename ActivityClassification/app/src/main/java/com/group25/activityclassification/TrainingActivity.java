@@ -1,7 +1,10 @@
 package com.group25.activityclassification;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ContentValues;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -14,6 +17,7 @@ import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -59,6 +63,24 @@ class DatabaseHelper {
         dbDir = Environment.getExternalStorageDirectory().getPath() + File.separator + "Cse535_Group25";
         dbName = "A3.db";
         dbPath = dbDir + File.separator + dbName;
+    }
+
+    //
+    // Check to see if the database already exists
+    //
+    public Boolean exists() {
+        return (new File(dbPath)).exists();
+    }
+
+    //
+    // Init the database
+    //
+    public void initDatabase() {
+        // Delete database if it exists
+        File f = new File(dbPath);
+        if (f.exists()) {
+            f.delete();
+        }
 
         try
         {
@@ -221,10 +243,34 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
 
         //----------------
 
-
         mDb = new DatabaseHelper();
 
-        stop();
+        if (mDb.exists()) {
+            // DB already exists? Want to run training on existing data?
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Training data already exists! Would you like to delete the training data and re-train the model?");
+            builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    // Delete existing training data and re-train
+                    mDb.initDatabase();
+                    stop();
+                }
+            });
+            builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    // Keep existing training data and exit activity
+                    Intent resultIntent = new Intent();
+                    setResult(Activity.RESULT_OK, resultIntent);
+                    finish();
+                }
+            });
+            builder.show();
+        } else {
+            mDb.initDatabase();
+            stop();
+        }
     }
 
     /**
@@ -322,6 +368,35 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
 
         mState += 1;
         startActivityRecording();
+    }
+
+    private void trainSvmModel() {
+        mAccelerometerLiveData.setText("Training SVM...");
+
+        // Save 3 (XYZ) * 50 (5 sec, 10Hz) * 20 (collections) * 3 (activities) samples total to database
+        ArrayList<UserActivity> activities = new ArrayList<UserActivity>();
+
+        for (int i = 0; i < 20; i++) {
+            int from = i*50;
+            int to = (i+1)*50;
+            activities.add(new UserActivity(
+                new ArrayList<AccelerometerSample>(
+                    mWalkingSamples.subList(from, to)),
+                ActivityType.ACTIVITY_WALKING));
+            activities.add(new UserActivity(
+                new ArrayList<AccelerometerSample>(
+                    mRunningSamples.subList(from, to)),
+                ActivityType.ACTIVITY_RUNNING));
+            activities.add(new UserActivity(
+                new ArrayList<AccelerometerSample>(
+                    mWalkingSamples.subList(from, to)),
+                ActivityType.ACTIVITY_JUMPING));
+        }
+
+        Classifier classifier = new Classifier();
+        classifier.train(activities);
+
+        mAccelerometerLiveData.setText("Complete! Press back to return to main activity.");
     }
 
     //
@@ -451,6 +526,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             mAccelerometerLiveData.setText("Database created!");
+            trainSvmModel();
         }
     }
 }

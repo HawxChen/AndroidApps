@@ -1,0 +1,5 @@
+# Use grid.py tool to find best hyperparams
+python ../libsvm/tools/grid.py -v 4 accel.sv
+
+# Then run svm-train to generate model
+../libsvm/svm-train -s 0 -t 2 -c 2.0 -g 0.125 -v 4 accel.svm
