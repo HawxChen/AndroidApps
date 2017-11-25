@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // Make sure directories exist
         new File(dbHelper.getDbDir()).mkdirs();
-        
+
         // https://stackoverflow.com/questions/4081763/access-resource-files-in-android
         InputStream in = getResources().openRawResource(R.raw.default_training_data);
 

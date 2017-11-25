@@ -67,9 +67,9 @@ class Classifier {
             br.close();
 
             switch (activityId) {
-                case -1: return ActivityType.ACTIVITY_WALKING;
-                case  0: return ActivityType.ACTIVITY_RUNNING;
-                case  1: return ActivityType.ACTIVITY_JUMPING;
+                case 0: return ActivityType.ACTIVITY_WALKING;
+                case 1: return ActivityType.ACTIVITY_RUNNING;
+                case 2: return ActivityType.ACTIVITY_JUMPING;
                 default: return ActivityType.ACTIVITY_UNKNOWN;
             }
 

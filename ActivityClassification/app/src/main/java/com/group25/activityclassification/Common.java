@@ -1,5 +1,6 @@
 package com.group25.activityclassification;
 
+import android.app.Activity;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -41,14 +42,22 @@ class UserActivity {
         mActivityType = activityType;
     }
 
+    public ArrayList<AccelerometerSample> getSamples() {
+        return mSamples;
+    }
+
+    public ActivityType getActivityType() {
+        return mActivityType;
+    }
+
     public String getSvmFormat() {
         StringBuilder stringBuilder = new StringBuilder();
         int classifierId;
         switch (mActivityType) {
-            case ACTIVITY_WALKING: classifierId = -1; break;
-            case ACTIVITY_RUNNING: classifierId =  0; break;
-            case ACTIVITY_JUMPING: classifierId =  1; break;
-            default: classifierId = -1; break; // Default to walking
+            case ACTIVITY_WALKING: classifierId = 0; break;
+            case ACTIVITY_RUNNING: classifierId = 1; break;
+            case ACTIVITY_JUMPING: classifierId = 2; break;
+            default:               classifierId = 3; break;
         }
         stringBuilder.append(String.format("%d ", classifierId));
         for (int i = 0; i < 50; i++) {
@@ -184,20 +193,25 @@ class DatabaseHelper {
         return ActivityType.ACTIVITY_UNKNOWN;
     }
 
-    public void addRecordsToDatabase(ActivityType activityType, ArrayList<AccelerometerSample> samples) {
-        ContentValues cv = new ContentValues();
-        for(int i = 1; i <= 50; i++) {
-            AccelerometerSample sample = samples.get(i-1);
-            cv.put(String.format("ACCEL%d_X", i), sample.x);
-            cv.put(String.format("ACCEL%d_Y", i), sample.y);
-            cv.put(String.format("ACCEL%d_Z", i), sample.z);
-            cv.put("ACTIVITY", activityTypeToString(activityType));
-        }
+    public void addActivitiesToDatabase(ArrayList<UserActivity> activities) {
+        for (int i = 0; i < activities.size(); i++) {
+            UserActivity activity = activities.get(i);
+            ArrayList<AccelerometerSample> samples = activity.getSamples();
 
-        db.beginTransaction();
-        db.insert("samples", null, cv);
-        db.setTransactionSuccessful();
-        db.endTransaction();
+            ContentValues cv = new ContentValues();
+            for (int j = 0; j < 50; j++) {
+                AccelerometerSample sample = samples.get(j);
+                cv.put(String.format("ACCEL%d_X", j+1), sample.x);
+                cv.put(String.format("ACCEL%d_Y", j+1), sample.y);
+                cv.put(String.format("ACCEL%d_Z", j+1), sample.z);
+            }
+            cv.put("ACTIVITY", activityTypeToString(activity.getActivityType()));
+
+            db.beginTransaction();
+            db.insert("samples", null, cv);
+            db.setTransactionSuccessful();
+            db.endTransaction();
+        }
     }
 
     public ArrayList<UserActivity> getActivitiesFromDatabase() {

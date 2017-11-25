@@ -1,30 +1,22 @@
 package com.group25.activityclassification;
 
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.AsyncTask;
 import android.os.CountDownTimer;
-import android.os.Environment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class TrainingActivity extends AppCompatActivity implements View.OnClickListener, SensorEventListener {
@@ -41,20 +33,19 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     // State tracking
     private Boolean        mIsRunning;
     private Boolean        mIsAccelerometerRegistered;
-    private ActivityType   mActivity;
+    private ActivityType   mActivityType;
     private CountDownTimer mCountDownTimer;
-    private CountDownTimer mActivityTimer;
     private int            mCountdownInterval;
-    private int            mCollectionInterval;
+    private int            mActivitiesGathered; // Number of activities of a certain type gathered
+    private int            mActivitiesRequired; // Number of activities of a certain type required
     private int            mState;
 
     // Database
     private DatabaseHelper mDb;
 
     // Samples (stored in memory before committing to memory)
-    private ArrayList<AccelerometerSample> mWalkingSamples;
-    private ArrayList<AccelerometerSample> mRunningSamples;
-    private ArrayList<AccelerometerSample> mJumpingSamples;
+    private ArrayList<AccelerometerSample> mSamples;
+    private ArrayList<UserActivity>        mActivities;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,13 +63,12 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         mSensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
         mIsAccelerometerRegistered = false;
 
-        mWalkingSamples = new ArrayList<AccelerometerSample>();
-        mRunningSamples = new ArrayList<AccelerometerSample>();
-        mJumpingSamples = new ArrayList<AccelerometerSample>();
+        mSamples = new ArrayList<AccelerometerSample>();
+        mActivities = new ArrayList<UserActivity>();
 
-        mState = 0;
-        mCountdownInterval = 5;
-        mCollectionInterval = 105; // 20*5 + 5 seconds
+        mState              = 0;
+        mCountdownInterval  = 3;
+        mActivitiesRequired = 20;
 
         mDb = new DatabaseHelper();
 
@@ -146,7 +136,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         mStartButton.setText("Stop");
         mIsRunning = true;
         mState = 0;
-        beginActivity();
+        beginActivityCollection();
     }
 
     //
@@ -157,50 +147,49 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
             mCountDownTimer.cancel();
             mCountDownTimer = null;
         }
-        if (mActivityTimer != null) {
-            mActivityTimer.cancel();
-            mActivityTimer = null;
-        }
         stopSampling();
         mIsRunning = false;
         mStartButton.setText("Start");
         mAccelerometerLiveData.setText("Press \"Start\" button to begin collecting samples.");
         mTimerTextView.setText("");
         mActivityTextView.setText("");
+
+        mSamples.clear();
+        mActivities.clear();
     }
 
     //
     // Activity state machine
     //
-    private void beginActivity() {
+    private void beginActivityCollection() {
         switch (mState) {
 
         // Collect samples for Walking activity
         case 0:
-            mActivity = ActivityType.ACTIVITY_WALKING;
+            mActivityType = ActivityType.ACTIVITY_WALKING;
             mActivityTextView.setText("Walking");
             break;
 
         // Collect samples for Running activity
         case 1:
-            mActivity = ActivityType.ACTIVITY_RUNNING;
+            mActivityType = ActivityType.ACTIVITY_RUNNING;
             mActivityTextView.setText("Running");
             break;
 
         // Collect samples for Jumping Activity
         case 2:
-            mActivity = ActivityType.ACTIVITY_JUMPING;
+            mActivityType = ActivityType.ACTIVITY_JUMPING;
             mActivityTextView.setText("Jumping");
             break;
 
         // Save samples to database
         case 3:
-            stop();
             saveSamplesToDatabase();
             return;
         }
 
         mState += 1;
+        mActivitiesGathered = 0;
         startActivityRecording();
     }
 
@@ -210,22 +199,6 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     private void startActivityRecording() {
         mAccelerometerLiveData.setText("Please begin activity!");
 
-        // Create a countdown timer to time activity recording
-        mActivityTimer = new CountDownTimer(mCollectionInterval * 1000, 1000) {
-            public void onTick(long millisUntilFinished) {
-                mTimerTextView.setText(String.format("%d seconds remaining", millisUntilFinished / 1000 + 1));
-            }
-
-            public void onFinish() {
-                mAccelerometerLiveData.setText("");
-                mTimerTextView.setText("");
-                stopSampling();
-
-                // Begin next activity in state machine
-                beginActivity();
-            }
-        };
-
         // Create a countdown timer to allow the user to begin activity
         mCountDownTimer = new CountDownTimer(mCountdownInterval * 1000, 1000) {
             public void onTick(long millisUntilFinished) {
@@ -234,10 +207,13 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
 
             public void onFinish() {
                 mTimerTextView.setText("");
-                mActivityTimer.start();
                 startSampling();
             }
         }.start();
+    }
+
+    private void updateGatheredSamplesView() {
+        mTimerTextView.setText(String.format("Gathered %d of %d activity recordings", mActivitiesGathered, mActivitiesRequired));
     }
 
     //
@@ -245,6 +221,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     //
     private void startSampling() {
         if (!mIsAccelerometerRegistered) {
+            updateGatheredSamplesView();
             Sensor accelSensor = mSensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mSensorMgr.registerListener(this, accelSensor, 100000); // Every 100ms (10Hz)
             mIsAccelerometerRegistered = true;
@@ -259,6 +236,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
             mSensorMgr.unregisterListener(this);
             mIsAccelerometerRegistered = false;
         }
+        mAccelerometerLiveData.setText("");
     }
 
     //
@@ -272,16 +250,18 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         float y = sensorEvent.values[1];
         float z = sensorEvent.values[2];
 
-        switch (mActivity) {
-            case ACTIVITY_WALKING:
-                mWalkingSamples.add(new AccelerometerSample(x, y, z));
-                break;
-            case ACTIVITY_RUNNING:
-                mRunningSamples.add(new AccelerometerSample(x, y, z));
-                break;
-            case ACTIVITY_JUMPING:
-                mJumpingSamples.add(new AccelerometerSample(x, y, z));
-                break;
+        mSamples.add(new AccelerometerSample(x, y, z));
+
+        if (mSamples.size() >= 50) {
+            // We have enough samples for a full activity
+            mActivities.add(new UserActivity((ArrayList<AccelerometerSample>)mSamples.clone(), mActivityType));
+            mSamples.clear();
+            mActivitiesGathered += 1;
+            updateGatheredSamplesView();
+            if (mActivitiesGathered >= mActivitiesRequired) {
+                stopSampling();
+                beginActivityCollection();
+            }
         }
 
         // Update accelerometer live text view
@@ -310,25 +290,14 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         @Override
         protected Void doInBackground(Void... voids) {
             mDb.reinitDatabase();
-
-            // Save 3 (XYZ) * 50 (5 sec, 10Hz) * 20 (collections) * 3 (activities) samples total to database
-            for (int i = 0; i < 20; i++) {
-                int from = i*50;
-                int to = (i+1)*50;
-                mDb.addRecordsToDatabase(ActivityType.ACTIVITY_WALKING,
-                    new ArrayList<AccelerometerSample>(mWalkingSamples.subList(from, to)));
-                mDb.addRecordsToDatabase(ActivityType.ACTIVITY_RUNNING,
-                    new ArrayList<AccelerometerSample>(mRunningSamples.subList(from, to)));
-                mDb.addRecordsToDatabase(ActivityType.ACTIVITY_JUMPING,
-                    new ArrayList<AccelerometerSample>(mJumpingSamples.subList(from, to)));
-            }
-
+            mDb.addActivitiesToDatabase(mActivities);
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            stop();
             mAccelerometerLiveData.setText("Database created!");
         }
     }
