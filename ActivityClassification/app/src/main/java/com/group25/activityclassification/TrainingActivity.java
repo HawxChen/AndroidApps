@@ -39,6 +39,7 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
     private int            mActivitiesGathered; // Number of activities of a certain type gathered
     private int            mActivitiesRequired; // Number of activities of a certain type required
     private int            mState;
+    private long           mLastTime;
 
     // Database
     private DatabaseHelper mDb;
@@ -223,7 +224,8 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         if (!mIsAccelerometerRegistered) {
             updateGatheredSamplesView();
             Sensor accelSensor = mSensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            mSensorMgr.registerListener(this, accelSensor, 100000); // Every 100ms (10Hz)
+            mSensorMgr.registerListener(this, accelSensor, 100000); // 100ms (10Hz)
+            mLastTime = System.currentTimeMillis();
             mIsAccelerometerRegistered = true;
         }
     }
@@ -250,9 +252,17 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
         float y = sensorEvent.values[1];
         float z = sensorEvent.values[2];
 
-        mSamples.add(new AccelerometerSample(x, y, z));
+        // Update accelerometer live text view (however fast they come in)
+        mAccelerometerLiveData.setText(String.format("X: %f, Y: %f, Z: %f", x, y, z));
 
-        if (mSamples.size() >= 50) {
+        // Try to smooth out accelerometer readings (they seem to come in much faster than requested)
+        long now = System.currentTimeMillis();
+        if (now - mLastTime < 100) return;
+        mLastTime = now;
+
+        if (mSamples.size() < 50) {
+            mSamples.add(new AccelerometerSample(x, y, z));
+        } else {
             // We have enough samples for a full activity
             mActivities.add(new UserActivity((ArrayList<AccelerometerSample>)mSamples.clone(), mActivityType));
             mSamples.clear();
@@ -263,9 +273,6 @@ public class TrainingActivity extends AppCompatActivity implements View.OnClickL
                 beginActivityCollection();
             }
         }
-
-        // Update accelerometer live text view
-        mAccelerometerLiveData.setText(String.format("X: %f, Y: %f, Z: %f", x, y, z));
     }
 
     @Override
