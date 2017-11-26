@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private float          mCost;
     private float          mGamma;
     private int            mK;
+    private long           mLastTime;
 
     private Classifier                     mClassifier;
     private ArrayList<AccelerometerSample> mActivitySamples;
@@ -293,6 +294,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (!mIsAccelerometerRegistered) {
             Sensor accelSensor = mSensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mSensorMgr.registerListener(this, accelSensor, 100000); // Every 100ms (10Hz)
+            mLastTime = System.currentTimeMillis();
             mIsAccelerometerRegistered = true;
         }
     }
@@ -318,10 +320,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         float y = sensorEvent.values[1];
         float z = sensorEvent.values[2];
 
-        mActivitySamples.add(new AccelerometerSample(x, y, z));
-
         // Update accelerometer live text view
         mAccelerometerLiveData.setText(String.format("X: %f, Y: %f, Z: %f", x, y, z));
+
+        // Try to smooth out accelerometer readings (they seem to come in much faster than requested)
+        long now = System.currentTimeMillis();
+        if (now - mLastTime < 100) return;
+        mLastTime = now;
+
+        mActivitySamples.add(new AccelerometerSample(x, y, z));
     }
 
     @Override

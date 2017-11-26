@@ -62,9 +62,9 @@ class UserActivity {
         stringBuilder.append(String.format("%d ", classifierId));
         for (int i = 0; i < 50; i++) {
             AccelerometerSample sample = mSamples.get(i);
-            stringBuilder.append(String.format("%d:%f ", i*3+1, sample.x/10.0));
-            stringBuilder.append(String.format("%d:%f ", i*3+2, sample.y/10.0));
-            stringBuilder.append(String.format("%d:%f ", i*3+3, sample.z/10.0));
+            stringBuilder.append(String.format("%d:%f ", i*3+1, sample.x/20.0));
+            stringBuilder.append(String.format("%d:%f ", i*3+2, sample.y/20.0));
+            stringBuilder.append(String.format("%d:%f ", i*3+3, sample.z/20.0));
         }
         stringBuilder.append("\n");
         return stringBuilder.toString();
