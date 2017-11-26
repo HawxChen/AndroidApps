@@ -14,3 +14,7 @@ Data Collection Activity
 A new database can be created with custom training data by clicking the "Training Data" button. You will be prompted to confirm deleting the old database and replace it with new data if that is the desired action.
 
 ![screenshot_train.png](screenshot_train.png)
+
+Demo Video
+------------------------
+[![Assignment 3 Demo](https://img.youtube.com/vi/_pkF0FGQ7Uc/0.jpg)](https://www.youtube.com/watch?v=_pkF0FGQ7Uc&feature=youtu.be)
