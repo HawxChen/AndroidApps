@@ -90,8 +90,58 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/RemoteServer_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Remote Server" />
+
+                    <TextView
+                        android:id="@+id/remoteDelay_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tNetwork Delay:" />
+
+                    <TextView
+                        android:id="@+id/remoteCompt_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tComputationStatus:" />
+
+                    <TextView
+                        android:id="@+id/FogServer_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Fog Server" />
+
+                    <TextView
+                        android:id="@+id/fogDelay_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tNetwork Delay:" />
+
+                    <TextView
+                        android:id="@+id/fogCompt_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tComputationStatus:" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_alignParentBottom="true">
+                    android:layout_alignParentBottom="true"
+                    android:id="@+id/linearLayout">
+
+                    <TextView
+                        android:id="@+id/BatteryLevel_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="BatteryLevel:" />
 
                     <TextView
                         android:id="@+id/server_status"

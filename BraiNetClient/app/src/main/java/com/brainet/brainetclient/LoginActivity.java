@@ -6,7 +6,10 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Environment;
+import android.os.BatteryManager;
+import android.content.IntentFilter;
 import android.preference.PreferenceManager;
+import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 
 import android.os.AsyncTask;
@@ -25,9 +28,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.SecureRandom;
@@ -46,10 +52,17 @@ import javax.net.ssl.X509TrustManager;
 public class LoginActivity extends AppCompatActivity {
 
     class ServerStatus {
-        public String  addr;
-        public Boolean active;
-        public Boolean request_successful;
-        public long    response_time;
+        public String       addr;
+        public String       name;
+        public Boolean      active;
+        public Boolean      request_successful;
+        public long         network_delay;
+        public long         computation_time;
+        public long         alltime;
+        public long         response_time;
+        public TextView     network_delay_view;
+        public TextView     comptuation_time_view;
+        public TextView     heading_view;
     }
 
     private String mServerPref = "";
@@ -60,6 +73,8 @@ public class LoginActivity extends AppCompatActivity {
     private ServerTestTask mServerTestTask = null;
     private ServerStatus   mRemoteServerStatus;
     private ServerStatus   mFogServerStatus;
+    private ServerStatus   mRunningServerStatus;
+
 
     // UI references.
     private AutoCompleteTextView mUsernameView;
@@ -67,6 +82,8 @@ public class LoginActivity extends AppCompatActivity {
     private View                 mProgressView;
     private View                 mLoginFormView;
     private TextView             mServerStatusView;
+    private TextView             mBatteryView;
+
 
     // Activity response requests IDs
     public final static int REQUEST_UPDATE_SETTINGS = 1;
@@ -121,6 +138,8 @@ public class LoginActivity extends AppCompatActivity {
         mFogServerStatus.request_successful = false;
         mFogServerStatus.response_time = 0;
 
+
+
         /* Test the servers */
         mServerStatusView.setText("Testing Servers...");
         mServerTestTask = new ServerTestTask();
@@ -166,8 +185,21 @@ public class LoginActivity extends AppCompatActivity {
         mFogServerStatus = new ServerStatus();
 
         mLoginFormView = findViewById(R.id.login_form);
+
+
         mProgressView = findViewById(R.id.login_progress);
         mServerStatusView = (TextView) findViewById(R.id.server_status);
+        mBatteryView = (TextView) findViewById(R.id.BatteryLevel_ID);
+
+        mRemoteServerStatus.name = "Remote Server - all processing time: ";
+        mRemoteServerStatus.comptuation_time_view = (TextView) findViewById(R.id.remoteCompt_ID);
+        mRemoteServerStatus.network_delay_view = (TextView) findViewById(R.id.remoteDelay_id);
+        mRemoteServerStatus.heading_view = (TextView) findViewById(R.id.RemoteServer_ID);
+
+        mFogServerStatus.name = "Fog Server - all processing time: ";
+        mFogServerStatus.comptuation_time_view = (TextView) findViewById(R.id.fogCompt_ID);
+        mFogServerStatus.network_delay_view = (TextView) findViewById(R.id.fogDelay_id);
+        mFogServerStatus.heading_view = (TextView) findViewById(R.id.FogServer_ID);
 
         updatePreferences();
     }
@@ -241,8 +273,10 @@ public class LoginActivity extends AppCompatActivity {
 
         if (useRemote) {
             serverUrl = String.format("http://%s/login", mRemoteServerStatus.addr);
+            mRunningServerStatus = mRemoteServerStatus;
         } else if (useFog) {
             serverUrl = String.format("http://%s/login", mFogServerStatus.addr);
+            mRunningServerStatus = mFogServerStatus;
         } else {
             // No available server!
             serverUrl = "";
@@ -267,6 +301,20 @@ public class LoginActivity extends AppCompatActivity {
     private boolean isUsernameValid(String username) {
         //TODO: Replace this with your own logic
         return true;
+    }
+
+    //https://stackoverflow.com/questions/15746709/get-battery-level-only-once-using-android-sdk
+    public float getBatteryLevel() {
+        Intent batteryIntent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        int level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+        // Error checking that probably isn't needed but I added just in case.
+        if(level == -1 || scale == -1) {
+            return 50.0f;
+        }
+
+        return ((float)level / (float)scale) * 100.0f;
     }
 
     /**
@@ -314,6 +362,8 @@ public class LoginActivity extends AppCompatActivity {
         private final String mUsername;
         private final String mServerUrl;
         private final String mSignalFilePath;
+        private float start_battery_level = Float.MIN_VALUE;
+        private float end_battery_level = Float.MIN_VALUE;
 
         /*
          * Constructor
@@ -324,6 +374,10 @@ public class LoginActivity extends AppCompatActivity {
             mSignalFilePath = signalFilePath;
         }
 
+        @Override
+        protected void onPreExecute() {
+            start_battery_level = getBatteryLevel();
+        }
         /*
          * Main background task
          */
@@ -336,6 +390,7 @@ public class LoginActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            end_battery_level = getBatteryLevel();
             return result;
         }
 
@@ -355,6 +410,11 @@ public class LoginActivity extends AppCompatActivity {
                 mSignalAcquisitionButton.setError(getString(R.string.error_incorrect_password));
                 mSignalAcquisitionButton.requestFocus();
             }
+            mBatteryView.setText("BatteryLevel: " + "("+ Float.toString(start_battery_level) +","+ Float.toString(end_battery_level) +")");
+            mRunningServerStatus.network_delay_view.setText("\t\tNetwork Delay: " + Long.toString(mRemoteServerStatus.network_delay));
+            mRunningServerStatus.comptuation_time_view.setText("\t\tComputation Time: " + Long.toString(mRunningServerStatus.computation_time));
+            mRunningServerStatus.heading_view.setText(mRunningServerStatus.name + Long.toString(mRunningServerStatus.alltime));
+
         }
 
         @Override
@@ -387,12 +447,10 @@ public class LoginActivity extends AppCompatActivity {
             return (HttpURLConnection) new URL(mServerUrl).openConnection();
         }
 
-        private boolean doLogin() throws Exception {
-            Log.d(TAG, "doLogin()");
+        private HttpURLConnection writeMsg() throws Exception {
 
-            final String mark_boundary = "XXXXXXXXXXXXX";
             HttpURLConnection conn = returnHttpSSLConn();
-
+            final String mark_boundary = "XXXXXXXXXXXXX";
             final int connectTimeout = 5000;
             final int readTimeout = 50000;
             conn.setConnectTimeout(connectTimeout);
@@ -447,18 +505,37 @@ public class LoginActivity extends AppCompatActivity {
             // Write signal data
             FileInputStream db_file = new FileInputStream(mSignalFilePath);
             byte[] output_buf = new byte[4096];
-            int cnt = 0;
+            int cnt;
             while((cnt = db_file.read(output_buf)) > 0){
                 httpPacket.write(output_buf, 0, cnt);
             }
 
             // Write Endings
-            httpPacket.writeBytes("\r\n--" + mark_boundary + "--\r\n");;
+            httpPacket.writeBytes("\r\n--" + mark_boundary + "--\r\n");
 
             // Flush and close the connection
             httpPacket.flush();
             httpPacket.close();
+            return conn;
+        }
+
+        private boolean doLogin() throws Exception {
+            Log.d(TAG, "doLogin()");
+
+
+            long time_start = System.currentTimeMillis();
+            HttpURLConnection conn = writeMsg();
+
+            //On the Emulator, the value will be ZERO becuase of the emulator's slow virtual timer.
+            mRunningServerStatus.network_delay =  System.currentTimeMillis() - time_start;
+
             final int status = conn.getResponseCode();
+            Log.e(TAG, "STATUS: " + Integer.toString(status));
+
+
+            mRunningServerStatus.computation_time = getComputationTime(conn);
+            mRunningServerStatus.alltime = mRemoteServerStatus.network_delay + mRunningServerStatus.computation_time;
+
             if (status != HttpURLConnection.HTTP_OK) {
                 Log.e(TAG, "Failed with http status: " + status);
                 return false;
@@ -468,6 +545,33 @@ public class LoginActivity extends AppCompatActivity {
             return true;
         }
 
+    }
+    private long getComputationTime(HttpURLConnection conn) {
+        InputStream ins;
+        long computation_time = 0;
+        try {
+            if(conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                ins = conn.getInputStream();
+            } else {
+                ins = conn.getErrorStream();
+            }
+
+            // https://stackoverflow.com/questions/9856195/how-to-read-an-http-input-stream
+            BufferedReader reader = new BufferedReader(new InputStreamReader(ins));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while((line = reader.readLine()) != null) {
+                result.append(line);
+            }
+            Log.e(TAG,"BODY MSG2:" + result.toString());
+            String []msg = result.toString().split(" ");
+            computation_time = new Long(msg[msg.length-1]);
+
+        } catch (java.lang.Exception e) {
+            e.printStackTrace();
+        }
+
+        return computation_time;
     }
 
     /**
@@ -591,6 +695,7 @@ public class LoginActivity extends AppCompatActivity {
             conn.setRequestProperty("Connection", "Keep-Alive");
             conn.setRequestProperty("Cache-Control", "no-cache");
             final int status = conn.getResponseCode();
+            Log.e(TAG, "BODY MSG: " + conn.getResponseMessage());
             if (status != HttpURLConnection.HTTP_OK) {
                 Log.e(TAG, "Failed with http status: " + status);
                 return false;

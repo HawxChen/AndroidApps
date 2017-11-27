@@ -7,6 +7,7 @@ import os
 from random import random
 from hashlib import sha256
 import pickle
+import time
 
 def create_signature_from_signal_file(path):
     # Input file should contain samples
@@ -14,6 +15,7 @@ def create_signature_from_signal_file(path):
     #   - 60s worth of data
     with open(path, 'rb') as f:
         data = [float(x) for x in f.readlines()]
+
     # Now run the feature extractor on the input data
     features = eng.FeatureExt(matlab.double(data))
     return features
@@ -147,20 +149,23 @@ def login_post():
     upload_path = 'upload_' + sha256(str(random())).hexdigest()
     signal.save(upload_path)
 
+    start_millis = int(round(time.time()*1000))
     # Construct signature from user signal data
     signature = create_signature_from_signal_file(upload_path)
 
     # Find the user in the database
     users = db.get_users(name=username)
     if len(users) < 1:
-        return HTTPResponse(status=401, body="User does not exist")
+        end_millis = int(round(time.time()*1000))
+        return HTTPResponse(status=401, body="User does not exist, Computation Time: " + str(end_millis - start_millis))
 
     # User found, compare the signatures
     result = compare_signatures(users[0].signature, signature)
+    end_millis = int(round(time.time()*1000))
     if result == 0:
-        return HTTPResponse(status=401, body="Invalid Signature")
+        return HTTPResponse(status=401, body="Invalid Signature, Computation Time: " + str(end_millis - start_millis))
     else:
-        return HTTPResponse(status=200, body="Success")
+        return HTTPResponse(status=200, body="Success, Computation Time: " + str(end_millis - start_millis))
 
 #
 # Main Function (runs everything)
