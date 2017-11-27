@@ -30,7 +30,7 @@ def compare_signatures(sig1, sig2):
     # training_size = len(features) - 6
     training_size = len(sig1) / 12
     x = eng.Comparator(sig1, sig2, training_size)
-    print 'Comparator returned', x
+    # print 'Comparator returned', x
     return x
 
 ap = argparse.ArgumentParser(description='calculate accuracy based on the two folders: POSITIVE data and NEGATIVE data')
@@ -50,9 +50,36 @@ def build_features_from_files (files):
 
     return features_list
 
-POSITIVE = 1
-NEGATIVE = 2
-def verify_all_test ():
+def verify_all_test_by_Negative():
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+    for testing_f, testing_feature in all_list:
+        result = 0
+        for ngt_f, ngt_feature in ngt_list:
+            result = compare_signatures(testing_feature, ngt_feature)
+            if(result != 0): break
+        mark = True
+        if result == 0: # POSITIVE
+            for ngt_f in ngt_files_list:
+                if(testing_f == ngt_f): #True Positive
+                    mark = False
+                    TP = TP + 1 
+            if(mark):
+                FP = FP + 1 #False Positive
+            
+        else: # NEGATIVE
+            for ngt_f in ngt_files_list:
+                if(testing_f == ngt_f): #True Negative
+                    mark = False
+                    TN = TN + 1
+            if(mark):
+                FN = FN + 1 #False Negative
+
+    return TP, FP, TN, FN
+
+def verify_all_test_by_Positive():
     TP = 0
     FP = 0
     TN = 0
@@ -80,6 +107,10 @@ def verify_all_test ():
                 FN = FN + 1 #False Negative
 
     return TP, FP, TN, FN
+
+def verify_all_test ():
+    return verify_all_test_by_Positive()
+#    return verify_all_test_by_Negative()
 
 
     
