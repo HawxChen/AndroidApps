@@ -3,6 +3,8 @@ package com.brainet.brainetclient;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Environment;
@@ -66,6 +68,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private String mServerPref = "";
+    private String signalFilePath;
 
     private final static String TAG = "LoginActivity";
 
@@ -201,6 +204,8 @@ public class LoginActivity extends AppCompatActivity {
         mFogServerStatus.network_delay_view = (TextView) findViewById(R.id.fogDelay_id);
         mFogServerStatus.heading_view = (TextView) findViewById(R.id.FogServer_ID);
 
+        signalFilePath = Environment.getExternalStorageDirectory() + File.separator + "signal.txt";
+
         updatePreferences();
     }
 
@@ -244,10 +249,28 @@ public class LoginActivity extends AppCompatActivity {
             cancel = true;
         }
 
-        String serverUrl;
-        String signalFilePath = Environment.getExternalStorageDirectory() + File.separator + "S001R03_22.txt";
+        //
+        // Get signal data
+        //
+        if (!(new File(signalFilePath).exists())) {
+            // Error! Could not load signal file from SD Card!
+            focusView = mSignalAcquisitionButton;
 
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Could not find signal file in SD Card! Expected it to be at " + signalFilePath);
+            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+//                    finish();
+                }
+            });
+            builder.show();
+            return;
+        }
+
+        //
         // Check server
+        //
         Boolean useRemote = false;
         Boolean useFog = false;
 
@@ -261,7 +284,9 @@ public class LoginActivity extends AppCompatActivity {
             useFog = mFogServerStatus.request_successful;
         }
 
+        //
         // Break the tie based on server latency
+        //
         if (useRemote && useFog) {
             useFog = mFogServerStatus.response_time < mRemoteServerStatus.response_time;
             useRemote = !useFog;
@@ -272,14 +297,11 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         if (useRemote) {
-            serverUrl = String.format("http://%s/login", mRemoteServerStatus.addr);
             mRunningServerStatus = mRemoteServerStatus;
         } else if (useFog) {
-            serverUrl = String.format("http://%s/login", mFogServerStatus.addr);
             mRunningServerStatus = mFogServerStatus;
         } else {
             // No available server!
-            serverUrl = "";
             Toast.makeText(getApplicationContext(), "Error! No available server.", Toast.LENGTH_SHORT).show();
             cancel = true;
         }
@@ -293,6 +315,7 @@ public class LoginActivity extends AppCompatActivity {
             // perform the user login attempt.
             showProgress(true);
 
+            String serverUrl = String.format("http://%s/login", mRunningServerStatus.addr);
             mAuthTask = new UserLoginTask(username, serverUrl, signalFilePath);
             mAuthTask.execute((Void) null);
         }
@@ -411,7 +434,7 @@ public class LoginActivity extends AppCompatActivity {
                 mSignalAcquisitionButton.requestFocus();
             }
             mBatteryView.setText("BatteryLevel: " + "("+ Float.toString(start_battery_level) +","+ Float.toString(end_battery_level) +")");
-            mRunningServerStatus.network_delay_view.setText("\t\tNetwork Delay: " + Long.toString(mRemoteServerStatus.network_delay));
+            mRunningServerStatus.network_delay_view.setText("\t\tNetwork Delay: " + Long.toString(mRunningServerStatus.network_delay));
             mRunningServerStatus.comptuation_time_view.setText("\t\tComputation Time: " + Long.toString(mRunningServerStatus.computation_time));
             mRunningServerStatus.heading_view.setText(mRunningServerStatus.name + Long.toString(mRunningServerStatus.alltime));
 
@@ -542,6 +565,7 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             Log.e(TAG, "Finish Upload!!!");
+
             return true;
         }
 
@@ -701,6 +725,7 @@ public class LoginActivity extends AppCompatActivity {
                 return false;
             }
             Log.e(TAG, "Request successful!!!");
+
             return true;
         }
     }
