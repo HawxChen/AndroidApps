@@ -1,5 +1,6 @@
 # AndroidApps
-Since that in each folder, demo video and README file are includined, kindly check each folder to know works in detail. These apps and projects were created by two contributors: mborgerson and HawxChen.
+* These apps and projects were created by two contributors: mborgerson and HawxChen.
+* Since that in each folder, demo video and README file are includined, kindly check each folder to know works in detail. 
 
 
 For example, here is the README.md in BraiNet_Project folder:
