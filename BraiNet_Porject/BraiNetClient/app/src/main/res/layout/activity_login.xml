@@ -1,0 +1,157 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.brainet.brainetclient.LoginActivity">
+
+    <!-- Login progress -->
+    <ProgressBar
+        android:id="@+id/login_progress"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
+
+    <ScrollView
+        android:id="@+id/login_form"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/email_login_form"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/welcome"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Welcome to BraiNet!"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
+
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:text='To authenticate with the BraiNet system, you will use EEG signals. Please enter your username below, then tap the "Begin Signal Acquisition" button to acquire your EEG signal. You can then Sign In!' />
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <AutoCompleteTextView
+                    android:id="@+id/username"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/prompt_username"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:singleLine="true" />
+
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/signal_acquisition_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Begin Signal Acquisiton" />
+            </android.support.design.widget.TextInputLayout>
+
+            <Button
+                android:id="@+id/sign_in_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/action_sign_in" />
+
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/RemoteServer_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Remote Server" />
+
+                    <TextView
+                        android:id="@+id/remoteDelay_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tNetwork Delay:" />
+
+                    <TextView
+                        android:id="@+id/remoteCompt_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tComputationStatus:" />
+
+                    <TextView
+                        android:id="@+id/FogServer_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Fog Server" />
+
+                    <TextView
+                        android:id="@+id/fogDelay_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tNetwork Delay:" />
+
+                    <TextView
+                        android:id="@+id/fogCompt_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="\t\tComputationStatus:" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_alignParentBottom="true"
+                    android:id="@+id/linearLayout">
+
+                    <TextView
+                        android:id="@+id/BatteryLevel_ID"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="BatteryLevel:" />
+
+                    <TextView
+                        android:id="@+id/server_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Remote Server Status: Offline\nFog Server Status: Offline" />
+
+                </LinearLayout>
+            </RelativeLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

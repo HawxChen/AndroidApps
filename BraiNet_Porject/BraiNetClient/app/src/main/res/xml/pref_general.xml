@@ -1,0 +1,30 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- NOTE: EditTextPreference accepts EditText attributes. -->
+    <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
+
+    <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
+         dismiss it. -->
+    <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
+    <EditTextPreference
+        android:defaultValue="127.0.0.1:8000"
+        android:key="remote_server_addr"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="Remote Server IP Address and Port" />
+    <EditTextPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:defaultValue="127.0.0.1:8000"
+        android:key="fog_server_addr"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="Fog Server IP Address and Port" />
+    <ListPreference
+        android:key="server_preference"
+        android:title="Server Preference"
+        android:defaultValue="0"
+        android:entries="@array/server_select_list_entries"
+        android:entryValues="@array/server_select_list_values" />
+
+</PreferenceScreen>
